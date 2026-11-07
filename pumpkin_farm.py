@@ -40,9 +40,9 @@ def can_harvest_pumpkin(x, y):
 		else:
 			streak = 1
 			previous_measurement = measurement
-			
-	if streak >= PUMPKIN_HARVEST_SIZE:
-		return True
+
+		if streak >= PUMPKIN_HARVEST_SIZE:
+			return True
 	
 	previous_measurement = None
 	streak = 1
@@ -62,8 +62,8 @@ def can_harvest_pumpkin(x, y):
 			streak = 1
 			previous_measurement = measurement
 			
-	if streak >= PUMPKIN_HARVEST_SIZE:
-		return True
+		if streak >= PUMPKIN_HARVEST_SIZE:
+			return True
 		
 	return False
 
