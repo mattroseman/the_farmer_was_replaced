@@ -1,11 +1,44 @@
 import drone
 
+WORLD_SIZE = get_world_size()
+
+DIRECTIONS = [North, East, South, West]
 OPPOSITE_DIRECTION = {
 	North: South,
 	East: West,
 	South: North,
 	West: East
 }
+
+# given a (x, y) position and a direction, calculates the new (x, y)
+# if you moved one step in the given direction
+def shift(position, direction):
+	if direction == North:
+		return (position[0], position[1] + 1)
+	elif direction == East:
+		return (position[0] + 1, position[1])
+	elif direction == South:
+		return (position[0], position[1] - 1)
+	elif direction == West:
+		return (position[0] - 1, position[1])
+
+# Manhattan distance, with wrapped grid
+def distance(point_a, point_b):
+	return min(
+		abs(point_a[0] - point_b[0]),
+		# wraparound world
+		WORLD_SIZE - abs(point_a[0] - point_b[0])
+	) + min(
+		abs(point_a[1] - point_b[1]),
+		# wraparound world
+		WORLD_SIZE - abs(point_a[1] - point_b[1])
+	)
+	
+def inbounds(x, y):
+	return (
+		x >= 0 and x < WORLD_SIZE and
+		y >= 0 and y < WORLD_SIZE
+	)
 
 TILLED_CROPS = [
 	Entities.Carrot,

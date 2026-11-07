@@ -9,9 +9,9 @@ def move_to_no_warp(x, y):
 	current_x = get_pos_x()
 	current_y = get_pos_y()
 	
-	if target_x >= get_world_size():
+	if target_x >= WORLD_SIZE:
 		utils.error('ERROR: move_to x is outside of world')
-	if target_y >= get_world_size():
+	if target_y >= WORLD_SIZE:
 		utils.error('ERROR: move_to y is outside of world')
 		
 	while (current_x, current_y) != (target_x, target_y):
@@ -36,9 +36,9 @@ def move_to(x, y):
 	current_x = get_pos_x()
 	current_y = get_pos_y()
 	
-	if target_x >= get_world_size():
+	if target_x >= WORLD_SIZE:
 		utils.error('ERROR: move_to x is outside of world')
-	if target_y >= get_world_size():
+	if target_y >= WORLD_SIZE:
 		utils.error('ERROR: move_to y is outside of world')
 	
 	while (current_x, current_y) != (target_x, target_y):

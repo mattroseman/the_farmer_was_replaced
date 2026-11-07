@@ -26,17 +26,6 @@ def harvest_plots_queue():
 		
 	plots_queue = []
 
-# Manhattan distance, with wrapped grid
-def distance(point_a, point_b):
-	return min(
-		abs(point_a[0] - point_b[0]),
-		# wraparound world
-		WORLD_SIZE - abs(point_a[0] - point_b[0])
-	) + min(
-		abs(point_a[1] - point_b[1]),
-		# wraparound world
-		WORLD_SIZE - abs(point_a[1] - point_b[1])
-	)
 # harvest plots using nearest neighbor algorithm for travelling salesman
 # Hay : 3664 units, 7328 / minute
 # Wood : 6656 units, 13312 / minute
@@ -58,7 +47,7 @@ def harvest_plots_queue_nn():
 	# find closest plot in queue
 	for i in range(len(plots_queue)):
 		plot = plots_queue[i]
-		dist = distance((x, y), plot)
+		dist = utils.distance((x, y), plot)
 		if dist < min_dist:
 			min_dist = dist
 			next_plot = plot
@@ -71,23 +60,19 @@ def harvest_plots_queue_nn():
 	
 	harvest_plots_queue_nn()
 
-def farm(time_limit=None):
+def farm(should_stop=None):
 	global plots_queue
 	global farm_state
-
-	start_time = get_time()
 	
-	if time_limit != None:
-		quick_print('Running Polyculture Farm for ', time_limit, ' seconds')
-	else:
-		quick_print('Running Polyculture Farm')
+
+	quick_print('Running Polyculture Farm')
 	
 	if get_entity_type() in [Entities.Grass, Entities.Carrot, Entities.Bush, Entities.Tree]:
 		crop = get_entity_type()
 	else:
 		crop = Entities.Grass
 
-	while time_limit == None or get_time() - start_time < time_limit:
+	while should_stop == None or not should_stop():
 		x = get_pos_x()
 		y = get_pos_y()
 		
