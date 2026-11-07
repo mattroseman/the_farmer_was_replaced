@@ -6,7 +6,7 @@ WORLD_SIZE = get_world_size()
 
 def sort_neighbors():
 	measurement_survey = drone.look_around(measure, True)
-	if(measurement_survey[South] != None and measurement_survey[South] > measurement_survey['current']):
+	if (measurement_survey[South] != None and measurement_survey[South] > measurement_survey['current']):
 		swap(South)
 		
 		move(South)
@@ -14,7 +14,7 @@ def sort_neighbors():
 		move(North)
 	
 	measurement_survey = drone.look_around(measure, True)
-	if(measurement_survey[West] != None and measurement_survey[West] > measurement_survey['current']):
+	if (measurement_survey[West] != None and measurement_survey[West] > measurement_survey['current']):
 		swap(West)
 		
 		move(West)
@@ -43,6 +43,18 @@ def farm(should_stop=None):
 	while should_stop == None or not should_stop():
 		farm_once()
 		
+# fills the world with cactus, unsorted
+def plant_world():
+	drone.move_to(0, 0)
+	
+	for y in range(WORLD_SIZE):
+		for x in range(WORLD_SIZE):
+			crops.handle_cactus()
+			
+			move(East)
+		move(North)
+			
+	drone.move_to(0, 0)
 		
 if __name__  == '__main__':
 	clear()

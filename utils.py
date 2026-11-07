@@ -21,18 +21,37 @@ def shift(position, direction):
 		return (position[0], position[1] - 1)
 	elif direction == West:
 		return (position[0] - 1, position[1])
+		
+# direction determines the general direction point b is from a, e.g. a -> b is East
+# favors North/South over East/West, e.g NW becomes N and SE becomes South
+def direction(a, b):
+	if a == b:
+		return None
+
+	if b[1] > a[1]:
+		return North
+	if b[1] < a[1]:
+		return South
+	if b[0] > a[0]:
+		return East
+	if b[0] < a[0]:
+		return West
 
 # Manhattan distance, with wrapped grid
-def distance(point_a, point_b):
+def distance(a, b):
 	return min(
-		abs(point_a[0] - point_b[0]),
+		abs(a[0] - b[0]),
 		# wraparound world
-		WORLD_SIZE - abs(point_a[0] - point_b[0])
+		WORLD_SIZE - abs(a[0] - b[0])
 	) + min(
-		abs(point_a[1] - point_b[1]),
+		abs(a[1] - b[1]),
 		# wraparound world
-		WORLD_SIZE - abs(point_a[1] - point_b[1])
+		WORLD_SIZE - abs(a[1] - b[1])
 	)
+
+# distance with no wrap
+def distance_no_wrap(a, b):
+	return abs(a[0] - b[0]) + abs(a[1] - b[1])
 	
 def inbounds(x, y):
 	return (

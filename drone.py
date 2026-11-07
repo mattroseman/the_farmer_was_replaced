@@ -96,6 +96,36 @@ def is_top_right():
 	world_size = get_world_size()
 	
 	return x == world_size - 1 and y == world_size - 1
+	
+# traverses over the whole world in a zig zag motion
+def zig_zag_farm():
+	move_to(0, 0)
+	for i in range(WORLD_SIZE // 2):
+		for y in range(WORLD_SIZE - 1):
+			move(North)
+			
+		# for odd-lengthed worlds, don't do a final return trip
+		if i == (WORLD_SIZE // 2) - 1 and WORLD_SIZEWORLD_SIZE % 2 == 1:
+			return
+
+		move(East)
+		for y in range(WORLD_SIZE - 1):
+			move(South)
+		move(East)
+
+# traverses the world, visiting each plot, and performs the given operation
+# (optional) calls the callback with the return value of operation after each call
+def for_each_plot(operation, callback=None):
+	move_to(0, 0) 
+	for y in range(WORLD_SIZE):
+		for x in range(WORLD_SIZE):
+			return_value = operation()
+			if callback != None:
+				callback(return_value)
+			move(East)
+		move(North)
+
+	move_to(0, 0)
 				
 if __name__ == '__main__':
 	move_to(1,1)
