@@ -11,9 +11,3 @@
 #   weird substance farm?
 
 
-import drone
-import polyculture_row_farm
-
-
-
-unlock(Unlocks.Pumpkins)
