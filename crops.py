@@ -33,7 +33,7 @@ def is_tilled_crop(crop):
 	return utils.array_contains(TILLED_CROPS, crop)
 	
 def get_default_handler(crop):
-	def default_handler():
+	def default_handler(force=False):
 		if can_harvest():
 			harvest()
 
@@ -45,7 +45,7 @@ def get_default_handler(crop):
 
 	return default_handler
 
-def handle_carrot():
+def handle_carrot(force=False):
 	if can_harvest():
 		harvest()
 
@@ -55,20 +55,20 @@ def handle_carrot():
 	
 	water_plot()
 	
-def handle_tree():
+def handle_tree(force=False):
 	if can_harvest():
 		harvest()
 
 	set_untilled()
 		
-	if not is_neighboring_tree():
+	if force or not is_neighboring_tree():
 		plant(Entities.Tree)
 	else:
 		plant(Entities.Bush)
 		
 	water_plot()
 	
-def handle_pumpkin():
+def handle_pumpkin(force=False):
 	# if can_harvest():
 	# 	harvest()
 
@@ -78,7 +78,7 @@ def handle_pumpkin():
 		
 	water_plot()
 
-def handle_sunflower(replant=True):
+def handle_sunflower(force=False, replant=True):
 	if can_harvest():
 		harvest()
 
@@ -89,7 +89,7 @@ def handle_sunflower(replant=True):
 
 	water_plot()
 
-def handle_cactus():
+def handle_cactus(force=False):
 	if can_harvest():
 		harvest()
 

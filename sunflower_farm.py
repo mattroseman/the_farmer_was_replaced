@@ -15,7 +15,7 @@ def harvest_sunflowers():
 		
 		for (x, y) in sunflower_petals[num_petals]:
 			drone.move_to(x, y)
-			crops.handle_sunflower(False)
+			crops.handle_sunflower(False, False)
 		sunflower_petals[num_petals] = []
 
 	drone.move_to(0, 0)
