@@ -155,7 +155,7 @@ def performance_test_farm(farm, time_limit_sec=30):
 	while True:
 		for product in production:
 			move(South)
-			print(product, ':', production[product], 'units,', (production[product] / time_limit_sec) * 60, '/ minute')
+			print((production[product] / time_limit_sec) * 60, product, '/ minute')
 		for _ in production:
 			move(North)
 

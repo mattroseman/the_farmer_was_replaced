@@ -28,12 +28,14 @@ def is_enough_pumpkins():
 	inventory = utils.get_inventory()
 	pumpkins = inventory[Items.Pumpkin]
 	
-	return pumpkins >= 10000
+	return pumpkins >= 1000000
 def is_not_enough_pumpkins():
 	return not is_enough_pumpkins()
 	
 def resources_needed():
 	return is_not_enough_power() or is_not_enough_hay_wood_carrots() or is_not_enough_pumpkins()
+def pumpkin_resources_needed():
+	return is_not_enough_power() or is_not_enough_hay_wood_carrots()
 	
 # combines a resource_check function with a timer,
 # so even if the resource_check passes, a minimum time will run
@@ -57,9 +59,9 @@ def main():
 		elif is_not_enough_hay_wood_carrots():
 			polyculture_row_farm.farm(get_resource_check_with_timer(is_enough_hay_wood_carrots, 5*60))
 		elif is_not_enough_pumpkins():
-			pumpkin_farm.farm(resources_needed)
+			pumpkin_farm.farm(pumpkin_resources_needed)
 		else:
-			cactus_farm.farm_once()
+			cactus_farm.farm_once(resources_needed)
 		
 
 if __name__ == '__main__':

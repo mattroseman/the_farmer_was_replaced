@@ -117,8 +117,8 @@ def zig_zag_farm():
 # (optional) calls the callback with the return value of operation after each call
 def for_each_plot(operation, callback=None):
 	move_to(0, 0) 
-	for y in range(WORLD_SIZE):
-		for x in range(WORLD_SIZE):
+	for _ in range(WORLD_SIZE):
+		for _ in range(WORLD_SIZE):
 			return_value = operation()
 			if callback != None:
 				callback(return_value)

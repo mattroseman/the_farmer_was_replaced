@@ -7,4 +7,25 @@
 #	excursion, but you can bunch up on your way back
 
 
-change_hat(Hats.Wizard_Hat)
+import drone
+import polyculture_row_farm
+
+# go for pumpkin yield unlock
+cost = get_cost(Unlocks.Pumpkins)
+
+cost_carrots = cost[Items.Carrot]
+have_carrots = num_items(Items.Carrot)
+
+def have_enough_carrots():
+	have_carrots = num_items(Items.Carrot)
+	return have_carrots >= cost_carrots + 100000
+
+drone.move_to(0, 2)
+print('Have', have_carrots, 'carrots')
+move(South)
+print('Need', cost_carrots - have_carrots + 100000, 'carrots')
+move(South)
+
+polyculture_row_farm.farm(have_enough_carrots, Entities.Carrot)
+
+unlock(Unlocks.Pumpkins)
