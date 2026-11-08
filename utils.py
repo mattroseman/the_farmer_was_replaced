@@ -107,7 +107,8 @@ def get_inventory():
 		Items.Water: num_items(Items.Water),
 		Items.Fertilizer: num_items(Items.Fertilizer),
 		Items.Power: num_items(Items.Power),
-		Items.Cactus: num_items(Items.Cactus)
+		Items.Cactus: num_items(Items.Cactus),
+		Items.Bone: num_items(Items.Bone)
 	}
 
 # get_timer creates a timer function which starts a timer when called
@@ -147,7 +148,8 @@ def performance_test_farm(farm, time_limit_sec=30):
 		'Pumpkin': end_inventory[Items.Pumpkin] - start_inventory[Items.Pumpkin],
 		'Water': end_inventory[Items.Water] - start_inventory[Items.Water],
 		'Power': end_inventory[Items.Power] - start_inventory[Items.Power],
-		'Cactus': end_inventory[Items.Cactus] - start_inventory[Items.Cactus]
+		'Cactus': end_inventory[Items.Cactus] - start_inventory[Items.Cactus],
+		'Bone': end_inventory[Items.Bone] - start_inventory[Items.Bone]
 	}
 
 	drone.move_to(0, min(len(production), get_world_size() - 1))
@@ -165,6 +167,20 @@ def error(message):
 	while True:
 		print(message)
 		do_a_flip()
+
+def print_lines(lines, forever=False):
+	num_lines = len(lines)
+
+	repeat = True
+	while repeat:
+		drone.move_to(0, num_lines)
+		for line in lines:
+			move(South)
+			print(line)
+			do_a_flip()
+
+		if not forever:
+			repeat = False
 		
 if __name__ == '__main__':
 	hat = Hats.Traffic_Cone

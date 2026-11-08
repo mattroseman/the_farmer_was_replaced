@@ -100,18 +100,22 @@ def is_top_right():
 # traverses over the whole world in a zig zag motion
 def zig_zag_farm():
 	move_to(0, 0)
-	for i in range(WORLD_SIZE // 2):
-		for y in range(WORLD_SIZE - 1):
+	move(North)
+	for zig_zag_i in range(WORLD_SIZE // 2):
+		for _ in range(WORLD_SIZE - 2):
 			move(North)
 			
-		# for odd-lengthed worlds, don't do a final return trip
-		if i == (WORLD_SIZE // 2) - 1 and WORLD_SIZEWORLD_SIZE % 2 == 1:
-			return
+		move(East)
 
-		move(East)
-		for y in range(WORLD_SIZE - 1):
+		for _ in range(WORLD_SIZE - 2):
 			move(South)
-		move(East)
+
+		if zig_zag_i != WORLD_SIZE // 2:
+			move(East)
+
+	move(South)
+	for _ in range(WORLD_SIZE):
+		move(West)
 
 # traverses the world, visiting each plot, and performs the given operation
 # (optional) calls the callback with the return value of operation after each call

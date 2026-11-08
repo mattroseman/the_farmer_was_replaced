@@ -11,3 +11,5 @@ crops.handle_carrot()
 companion = get_companion()
 print(companion)
 do_a_flip()
+
+# harvesting resets companion

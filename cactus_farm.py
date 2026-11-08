@@ -23,16 +23,23 @@ def sort_neighbors():
 
 # Plant and harvest one worlds-worth of cacti	
 def farm_once():
-	for y in range(WORLD_SIZE):
-		for x in range(WORLD_SIZE):
+	start_time = get_time()
+
+	for _ in range(WORLD_SIZE):
+		for _ in range(WORLD_SIZE):
 			crops.handle_cactus()
 
 			sort_neighbors()
 				
 			if drone.is_top_right():
-				# make sure the final cactus is grown
-				while not can_harvest():
-					do_a_flip()
+				# stall to let final cacti finish growing
+				print(get_time() - start_time)
+				do_a_flip()
+				do_a_flip()
+				print((get_time() - start_time) // 60, "minutes")
+				do_a_flip()
+				do_a_flip()
+				
 				harvest()
 			
 			move(East)

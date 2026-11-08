@@ -160,9 +160,7 @@ def clear_pumpkin_sizes():
 	for pumpkin_id in pumpkins_to_remove:
 		pumpkin_sizes.pop(pumpkin_id)
 	
-# only one row/column check: 20736 Pumpkin / minute
-# all possible row/column check: 18662.4 Pumpkin / minute
-# pumpkin size dict: 28339 Pumpkin / minute
+# 199,065.6 Pumpkin / minute
 def farm(should_stop=None):
 	while should_stop == None or not should_stop():
 		# traverse all rows
@@ -194,5 +192,4 @@ def farm(should_stop=None):
 				
 if __name__ == '__main__':		
 	clear()
-	farm()
-	# utils.performance_test_farm(farm)
+	utils.performance_test_farm(farm, 5*60)

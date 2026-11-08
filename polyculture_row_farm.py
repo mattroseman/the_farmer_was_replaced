@@ -98,10 +98,7 @@ def process_plot():
 # Hay: 195596.8 / minute
 # Wood: 678387.2 / minute
 # Carrot: 92,864 / minute
-# (carrot optimized)
-# 61504 Hay / minute
-# 123660.8 Wood / minute
-# 158,643 Carrot / minute
+
 def farm(should_stop=None, maximize_crop=None):
 	global maximized_crop
 	if maximize_crop != None:
@@ -112,5 +109,4 @@ def farm(should_stop=None, maximize_crop=None):
 
 if __name__ == '__main__':
 	clear()
-	maximized_crop = Entities.Carrot
 	utils.performance_test_farm(farm, 5*60)

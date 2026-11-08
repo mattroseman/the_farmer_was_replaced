@@ -196,14 +196,14 @@ def zig_zag():
 	smove(South)
 	for i in range(WORLD_SIZE - 1, 0, -1):
 		smove(West)
-		
+
 def farm():
 	global apple
 
 	apple = measure()
 
 	while True:
-		zig_zag()
+		drone.zig_zag_farm()
 
 if __name__ == '__main__':
 	clear()

@@ -6,6 +6,8 @@ import sunflower_farm
 import pumpkin_farm
 import cactus_farm
 
+TARGET_ITEM = None
+
 def is_enough_power():
 	inventory = utils.get_inventory()
 	power = inventory[Items.Power]
@@ -28,7 +30,7 @@ def is_enough_pumpkins():
 	inventory = utils.get_inventory()
 	pumpkins = inventory[Items.Pumpkin]
 	
-	return pumpkins >= 1000000
+	return pumpkins >= 100000
 def is_not_enough_pumpkins():
 	return not is_enough_pumpkins()
 	
@@ -54,14 +56,14 @@ def main():
 		clear()
 		drone.move_to(0,0)
 		
-		if is_not_enough_power():
+		if is_not_enough_power() or TARGET_ITEM == Items.Power:
 			sunflower_farm.farm(get_resource_check_with_timer(is_enough_power, 5*60))
-		elif is_not_enough_hay_wood_carrots():
+		elif is_not_enough_hay_wood_carrots() or TARGET_ITEM in [Items.Hay, Items.Wood, Items.Carrot]:
 			polyculture_row_farm.farm(get_resource_check_with_timer(is_enough_hay_wood_carrots, 5*60))
-		elif is_not_enough_pumpkins():
+		elif is_not_enough_pumpkins() or TARGET_ITEM == Items.Pumpkin:
 			pumpkin_farm.farm(pumpkin_resources_needed)
 		else:
-			cactus_farm.farm_once(resources_needed)
+			cactus_farm.farm(resources_needed)
 		
 
 if __name__ == '__main__':
