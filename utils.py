@@ -161,6 +161,39 @@ def performance_test_farm(farm, time_limit_sec=30):
 		for _ in production:
 			move(North)
 
+def copy_list(items):
+	copy = []
+	for item in items:
+		copy.append(item)
+
+	return copy
+
+def randomize_list(items):
+	for i in range(len(items)-1, 0, -1):
+		j = get_random_num(0, i+1)
+		# swap i and j
+		tmp = items[i]
+		items[i] = items[j]
+		items[j] = tmp
+
+	return items
+
+def get_randomized_directions():
+	directions_copy = copy_list(DIRECTIONS)
+	randomize_list(directions_copy)
+
+	return directions_copy
+
+# returns a random number from range_min, inclusive, to range_max, exclusive
+# [range_min, range_max)
+def get_random_num(range_min, range_max):
+	if range_max <= range_min:
+		error('range_max must be larger than range_min')
+
+	num = ((random() * (range_max - range_min)) // 1) + range_min
+
+	return num
+
 # prints the given error message, repeatedly
 # WARNING: THIS FUNCTION CONTAINS AN INFINITE LOOP
 def error(message):
