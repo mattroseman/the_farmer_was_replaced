@@ -65,8 +65,61 @@ def convert_to_loop_steps(loop):
 
 	return loop_steps
 
+# returns the distance to the next turnaround, assuming drone is in a zig-zag path
+# if drone is outside of zig-zag portion of the loop's path, return None
+def distance_to_turnaround():
+	# if top half of world
+	if y >= WORLD_SIZE // 2:
+		return (WORLD_SIZE - 1) - y
+	# bottom half of world
+	else:
+		return y - 1
+
+# calculates if the tail from going on an excursion from this point, will block the
+# upcoming loop path
+def will_excursion_tail_block_path():
+	# if excursion is to the West
+	if apple[0] < x:
+		return False
+
+	if direction_facing == North:
+		distance_to_turnaround = (WORLD_SIZE - 1) - y
+	elif direction_facing == South:
+		distance_to_turnaround = y - 1
+
+	if tail_len > (distance_to_turnaround * 2):
+		return True
+		
+	return False
+
+
+# checks if the tail is in the way of the path the excursion will take
+def will_tail_block_excursion_path():
+	apple_direction = utils.direction((x, y), apple)
+
+	if direction_facing == West:
+		return True
+
+	if apple_direction == West:
+		if direction_facing == North:
+			# check for tail West and North one
+			return (x - 1, y + 1) in tail
+		if direction_facing == South:
+			# check for tail West and South one
+			return (x - 1, y - 1) in tail
+
+	return False
+	# TODO should simulate excursion, along with tail trail, and confirm excursion path won't cross over tail
+	# TODO the simulation should also produce a path which the drone can follow, in other words keep the movement logic DRY
+	
 def can_make_excursion():
+	apple_direction = utils.direction((x, y), apple)
+
 	if (x, y) == apple:
+		return False
+
+	# can't go backwards, since tail is behind you
+	if apple_direction == utils.OPPOSITE_DIRECTION[direction_facing]:
 		return False
 
 	# only make excursions East/West
@@ -88,6 +141,11 @@ def can_make_excursion():
 	if direction_facing == West:
 		return False
 
+	if will_excursion_tail_block_path():
+		return False
+	if will_tail_block_excursion_path():
+		return False
+
 	return True
 
 # attempts to beeline for apple, and back into loop, if there's space
@@ -98,6 +156,7 @@ def excursion():
 	start_direction_facing = direction_facing
 	apple_direction = utils.direction((x, y), apple)
 	apple_distance = utils.distance_no_wrap((x, y), apple)
+
 
 	for _ in range(apple_distance):
 		smove(apple_direction)
@@ -130,18 +189,28 @@ def smove(direction):
 	global apple
 	global tail_len
 	global tail
+	
+	# if we're moving off the apple
+	if (x, y) == apple:
+		# measure for new apple
+		apple = measure()
 
-	move(direction)
+		# grow the tail
+		tail_len += 1
+
+	success = move(direction)
+	if not success:
+		utils.error("Can't Move")
+		return False
+
 	(x, y) = utils.shift((x, y), direction)
 	direction_facing = direction
 
-	if measure() != None:
-		apple = measure()
-		tail_len += 1
-		print(tail)
 
 	tail.append((x, y))
 	tail = tail[max(0, len(tail)-tail_len):]
+
+	return True
 
 def snake():
 	global apple
@@ -160,11 +229,14 @@ def snake():
 		if old_x == x and old_y == y:
 			can_move = False
 
+		# if lined up with the apple, attempt an excursion
 		if (x, y) != apple and (x == apple[0] or y == apple[1]):
+			# TODO prevent excursions off of excursions
 			excursion()
 
 
 def farm(should_stop=None):
+	global apple
 	global loop
 	loop = build_hamilton_loop()
 	global loop_steps
@@ -173,6 +245,7 @@ def farm(should_stop=None):
 	while should_stop == None or not should_stop(): 
 		drone.move_to(0, 0)
 		change_hat(Hats.Dinosaur_Hat)
+		apple = (x, y)
 
 		start_time = get_time()
 		start_inventory = utils.get_inventory()
@@ -186,8 +259,8 @@ def farm(should_stop=None):
 		end_inventory = utils.get_inventory()
 
 		utils.print_lines([
-			'You Won!',
-			'You beat snake in ' + str(runtime // 60) + ' minutes',
+			'Game Over',
+			'You played for ' + str(runtime // 60) + ' minutes',
 			'You farmed ' + str(end_inventory[Items.Bone] - start_inventory[Items.Bone]) + ' bones'
 		])
 

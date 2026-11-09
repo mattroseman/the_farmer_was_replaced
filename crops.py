@@ -75,6 +75,13 @@ def handle_pumpkin(force=False):
 	set_tilled()
 		
 	plant(Entities.Pumpkin)
+	if(force):
+		use_item(Items.Fertilizer)
+		use_item(Items.Fertilizer)
+	while force and get_entity_type() == Entities.Dead_Pumpkin:
+		plant(Entities.Pumpkin)
+		use_item(Items.Fertilizer)
+		use_item(Items.Fertilizer)
 		
 	water_plot()
 

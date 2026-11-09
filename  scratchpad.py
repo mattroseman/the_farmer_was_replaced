@@ -11,3 +11,7 @@
 #   weird substance farm?
 
 
+import drone
+
+drone.move_to(9,18)
+print(swap(North))

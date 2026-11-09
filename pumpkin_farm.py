@@ -67,7 +67,7 @@ def can_harvest_pumpkin(x, y):
 
 def replant_adjacent_dead_pumpkin(direction):
 	move(direction)
-	crops.handle_pumpkin()
+	crops.handle_pumpkin(True)
 	# recursively search the adjacent spots to this spot
 	replant_adjacent_dead_pumpkins()
 	# move back to where you started
@@ -159,8 +159,18 @@ def clear_pumpkin_sizes():
 			pumpkins_to_remove.append(pumpkin_id)
 	for pumpkin_id in pumpkins_to_remove:
 		pumpkin_sizes.pop(pumpkin_id)
+
+# quickly visit each pumpkin patch and harvest once,
+# collecting any fully grown pumpkins that remain		
+def clear_final_pumpkins():
+	for y in range(0, MAX_WORLD_USED, PATCH_SIZE):
+		for x in range(0, MAX_WORLD_USED, PATCH_SIZE):
+			drone.move_to(x, y)
+			harvest()
+			
+	drone.move_to(0, 0)
 	
-# 199,065.6 Pumpkin / minute
+# 254,822 Pumpkins / minute
 def farm(should_stop=None):
 	while should_stop == None or not should_stop():
 		# traverse all rows
@@ -189,6 +199,8 @@ def farm(should_stop=None):
 
 		# after doing a pass of the farm, clear out any no-longer-found pumpkins
 		clear_pumpkin_sizes()
+		
+	clear_final_pumpkins()
 				
 if __name__ == '__main__':		
 	clear()
