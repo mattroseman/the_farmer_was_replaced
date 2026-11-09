@@ -3,11 +3,11 @@ import drone
 
 
 # moves the drone down a crossroads, and starts a find-treasure thread on this branch
-def explore_branch(direction, position, path, visited):
+def explore_branch(direction, position, path, visited, should_stop):
 	move(direction)
-	return find_treasure_thread(position, path, visited)
+	return find_treasure_thread(position, path, visited, should_stop)
 
-def find_treasure_thread(position, path=[], visited=set()):
+def find_treasure_thread(position, path=[], visited=set(), should_stop=None):
 	starting_position = position
 
 	child_threads = set()
@@ -55,7 +55,7 @@ def find_treasure_thread(position, path=[], visited=set()):
 			if num_drones() < max_drones():
 				new_path = utils.copy_list(path)
 				new_path.append(step)
-				thread = spawn_drone(explore_branch, step, new_position, new_path, visited)
+				thread = spawn_drone(explore_branch, step, new_position, new_path, visited, should_stop)
 				child_threads.add(thread)
 
 		move(steps_to_take[0])
@@ -63,15 +63,18 @@ def find_treasure_thread(position, path=[], visited=set()):
 		path.append(steps_to_take[0])
 
 	if get_entity_type() == Entities.Treasure:
-		treasure_found()
+		harvest()
+		# print('Maze completed')
+		# do_a_flip()
+		if should_stop != None and should_stop():
+			return True
+		else:
+			maze(should_stop)
+	else:
+		# another drone could have finished the maze
+		return visited
 
-def treasure_found():
-	harvest()
-	print('Maze completed')
-	do_a_flip()
-	maze()
-
-def maze():
+def maze(should_stop=None):
 	clear()
 	drone.move_to(0, 0)
 	(x, y) = (0, 0)
@@ -80,7 +83,7 @@ def maze():
 	num_weird_substance = get_world_size() * 2**(num_unlocked(Unlocks.Mazes) - 1)
 	use_item(Items.Weird_Substance, num_weird_substance)
 
-	find_treasure_thread((x, y))
+	find_treasure_thread((x, y), [], set(), should_stop)
 
 
 if __name__ == '__main__':

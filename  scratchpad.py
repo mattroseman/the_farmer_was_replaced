@@ -10,8 +10,4 @@
 #   try fertilizer on pumpkin farm (does it prevent dead pumpkins?)
 #   weird substance farm?
 
-
-import drone
-
-drone.move_to(9,18)
-print(swap(North))
+leaderboard_run(Leaderboards.Maze, 'maze_leaderboard', 1000)
