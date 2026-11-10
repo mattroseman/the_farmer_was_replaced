@@ -10,4 +10,4 @@
 #   try fertilizer on pumpkin farm (does it prevent dead pumpkins?)
 #   weird substance farm?
 
-clear()
+

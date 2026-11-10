@@ -53,10 +53,10 @@ def distance(a, b):
 def distance_no_wrap(a, b):
 	return abs(a[0] - b[0]) + abs(a[1] - b[1])
 	
-def inbounds(x, y):
+def inbounds(position):
 	return (
-		x >= 0 and x < WORLD_SIZE and
-		y >= 0 and y < WORLD_SIZE
+		position[0] >= 0 and position[0] < WORLD_SIZE and
+		position[1] >= 0 and position[1] < WORLD_SIZE
 	)
 
 TILLED_CROPS = [
@@ -184,6 +184,9 @@ def get_randomized_directions():
 
 	return directions_copy
 
+def get_random_direction():
+	return DIRECTIONS[random()*4 // 1]
+
 # returns a random number from range_min, inclusive, to range_max, exclusive
 # [range_min, range_max)
 def get_random_num(range_min, range_max):
@@ -193,6 +196,11 @@ def get_random_num(range_min, range_max):
 	num = ((random() * (range_max - range_min)) // 1) + range_min
 
 	return num
+
+def get_random_plot():
+	x = random() * WORLD_SIZE // 1
+	y = random() * WORLD_SIZE // 1
+	return (x, y)
 
 def coinflip():
 	if random() >= 0.50:

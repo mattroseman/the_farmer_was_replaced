@@ -10,7 +10,7 @@ def position_possible(position, visited, tail):
 		return False
 
 	# check if next position is out of bounds
-	if not utils.inbounds(position[0], position[1]):
+	if not utils.inbounds(position):
 		return False
 
 	# check if the tail is in the way

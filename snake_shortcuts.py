@@ -101,7 +101,7 @@ def step_along_loop():
 			continue
 
 		shortcut_position = utils.shift((x, y), shortcut)
-		if not utils.inbounds(shortcut_position[0], shortcut_position[1]):
+		if not utils.inbounds(shortcut_position):
 			continue
 
 		shortcut_apple_dist = utils.distance_no_wrap(shortcut_position, apple)

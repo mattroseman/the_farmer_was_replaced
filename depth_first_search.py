@@ -15,7 +15,7 @@ def search(start, end, tail, first_step, visited=[]):
 			continue
 		visited.append(next_position)
 
-		if not utils.inbounds(next_position[0], next_position[1]):
+		if not utils.inbounds(next_position):
 			continue
 
 		# if the tail's in the way, this direction is a dead end

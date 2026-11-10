@@ -1,3 +1,5 @@
+import drone
+
 def build_shift_and_doer(direction, operation, args=()):
 	def shift_then_do():
 		move(direction)
@@ -7,6 +9,19 @@ def build_shift_and_doer(direction, operation, args=()):
 			operation(args)
 
 	return shift_then_do
+
+def build_move_to_and_doer(destination, operation, args=(), no_wrap=False):
+	def move_to_then_do():
+		if no_wrap:
+			drone.move_to_no_warp(destination[0], destination[1])
+		else:
+			drone.move_to(destination[0], destination[1])
+		if args == () or args == None:
+			operation()
+		else:
+			operation(args)
+
+	return move_to_then_do
 	
 # new_thread() spawns a drone to perform the given operation
 # optionally specify direction to spawn a drone one-off from current position

@@ -3,6 +3,37 @@ import crops
 
 WORLD_SIZE = get_world_size()
 
+
+SPECIAL_HATS = [
+	Hats.Dinosaur_Hat,
+	Hats.Dynamite_Hat,
+	Hats.Mining_Hat
+]
+
+unlocked_hats = set()
+def get_hats():
+	global unlocked_hats
+
+	if len(unlocked_hats) > 0:
+		return unlocked_hats
+
+	unlocked_hats = set()
+
+	for hat in Hats:
+		if num_unlocked(hat) > 0 and hat not in SPECIAL_HATS:
+			unlocked_hats.add(hat)
+
+	return unlocked_hats
+
+def get_random_hat():
+	hats = list(get_hats())
+	return hats[random() * len(hats) // 1]
+
+def wear_random_hat():
+	hat = get_random_hat()
+	change_hat(hat)
+
+
 def move_to_no_warp(x, y):
 	target_x = x
 	target_y = y
@@ -130,6 +161,23 @@ def for_each_plot(operation, callback=None):
 		move(North)
 
 	move_to(0, 0)
+
+# randomly move about and perform given operation at each plot
+def perambulate(operation, should_stop=None):
+	while should_stop == None or not should_stop():
+		direction = utils.get_random_direction()
+		move(direction)
+		operation()
+
+def perambulate_no_wrap(operation, should_stop=None):
+	while should_stop == None or not should_stop():
+		(x, y) = (get_pos_x(), get_pos_y())
+		direction = utils.get_random_direction()
+		while not utils.inbounds(utils.shift((x, y), direction)):
+			direction = utils.get_random_direction()
+
+		move(direction)
+		operation()
 	
 def wait_around():
 	while True:
