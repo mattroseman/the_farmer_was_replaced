@@ -81,6 +81,15 @@ def array_contains(array, value):
 			return True
 	return False
 
+# reverse the given map so keys are values and values are keys
+# may lead to less pairs, as two pairs with the same value will be deduplciated
+def reverse_map(map):
+	reverse_map = {}
+	for key in map:
+		reverse_map[map[key]] = key
+
+	return reverse_map
+
 def is_tilled_crop(crop):
 	return array_contains(TILLED_CROPS, crop)
 	

@@ -56,7 +56,7 @@ def prepare_for_party():
 		harvest()
 		crops.set_tilled()
 
-	routines.for_each_plot(prepare_plot_for_party)
+	routines.for_each_plot_threaded(prepare_plot_for_party)
 	
 
 def party(num_attending=max_drones()):

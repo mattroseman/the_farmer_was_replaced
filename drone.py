@@ -120,7 +120,7 @@ def look_around(sense, no_wrap=False):
 		South: sense(South),
 		West: sense(West)
 	}
-	
+
 def is_top_right():
 	x = get_pos_x()
 	y = get_pos_y()
@@ -131,6 +131,47 @@ def is_top_right():
 def wait_around():
 	while True:
 		pass
+
+# waits for the given crop in the given direction
+# optional timeout after the given number of ticks
+# returns True if the observed crop is the waited-for one, False if there was a timeout
+def wait_for_crop(crop, direction, timeout_ticks=None):
+	observed_crop = None
+	start_tick = get_tick_count()
+	while observed_crop != crop and (timeout_ticks == None or get_tick_count() - start_tick < timeout_ticks):
+		observed_crop = get_entity_type(direction)
+
+	return observed_crop == crop
+
+# waits for any crop except the given set of exceptions
+# returns the observed crop
+def wait_for_crop_except(except_crops, direction, timeout_ticks=None):
+	observed_crop = None
+	start_tick = get_tick_count()
+	while (observed_crop == None or observed_crop in except_crops) and (timeout_ticks == None or get_tick_count() - start_tick < timeout_ticks):
+		observed_crop = get_entity_type(direction)
+
+	if observed_crop != None and observed_crop not in except_crops:
+		return observed_crop
+
+	return None
+
+# waits for any change in crop from the given direction
+# returns the new crop or False if there was a timeout
+# an empty plot doesn't count, so if the starting entity is harvested, this function won't return until a new, different, crop is then planted
+def wait_for_new_crop(direction, timeout_ticks=None):
+	starting_entity = get_entity_type(direction)
+	observed_crop = starting_entity
+	start_tick = get_tick_count()
+	while (observed_crop == starting_entity or observed_crop == None) and (timeout_ticks == None or get_tick_count() - start_tick < timeout_ticks):
+		observed_crop = get_entity_type(direction)
+
+	if observed_crop != starting_entity:
+		return observed_crop
+
+	return False
+
+
 				
 if __name__ == '__main__':
 	move_to(1,1)
