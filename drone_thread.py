@@ -1,5 +1,4 @@
 import drone
-import utils
 
 WORLD_SIZE = get_world_size()
 
@@ -30,41 +29,34 @@ def build_move_to_and_doer(destination, operation, args=(), no_wrap=False):
 # optionally specify direction to spawn a drone one-off from current position
 # optionally pass an argument tuple, if operation accepts a single-tuple argument
 def new_thread(operation, direction=None, args=()):
+	thread = None
+
 	if direction == None:
 		# if no args to include
 		if args == () or args == None:
-			spawn_drone(operation)
+			thread = spawn_drone(operation)
 		else:
-			spawn_drone(operation, args)
+			thread = spawn_drone(operation, args)
 	else:
 		shift_then_do_operation = build_shift_and_doer(direction, operation, args)
 		
-		spawn_drone(shift_then_do_operation)
+		thread = spawn_drone(shift_then_do_operation)
 
-# traverses the world, visiting each plot, and performs the given operation
-# (optional) calls the callback with the return value of operation after each call
-def for_each_plot(operation, callback=None):
-	drone.move_to(0, 0)
+	return thread
 
-	def traverse_column(start_position):
-		last_column = start_position[0] >= (WORLD_SIZE - 1)
+# waits for children threads to complete, then returns a list of their results
+def wait_for_children(children):
+	results = []
+	for thread in children:
+		result = wait_for(thread)
+		results.append(result)
+		
+	return results
 
-		# spawn a drone for the column to the East
-		if not last_column:
-			new_thread(traverse_column, East, utils.shift(start_position, East))
-
-		for y in range(start_position[1], WORLD_SIZE):
-			last_row = y >= (WORLD_SIZE - 1)
-
-			return_value = operation()
-			if callback != None:
-				callback(return_value)
-
-			if not last_row:
-				move(North)
-
-	traverse_column((0, 0))
 
 if __name__ == '__main__':
 	clear()
-	for_each_plot(till)
+	import crops
+	import routines
+
+	routines.for_each_plot_threaded(crops.set_tilled)

@@ -1,6 +1,6 @@
 import utils
 import crops
-import drone
+import routines
 
 WORLD_SIZE = get_world_size()
 FIELD_PATTERN = [
@@ -105,7 +105,7 @@ def farm(should_stop=None, maximize_crop=None):
 		maximized_crop = maximize_crop
 
 	while should_stop == None or not should_stop():
-		drone.for_each_plot(process_plot)
+		routines.for_each_plot(process_plot)
 
 if __name__ == '__main__':
 	clear()

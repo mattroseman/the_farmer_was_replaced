@@ -19,7 +19,7 @@ def get_unlocked_hats():
 		print(hat)
 		do_a_flip()
 
-	
+
 if __name__ == '__main__':
 	# test_tick_count()
 	get_unlocked_hats()

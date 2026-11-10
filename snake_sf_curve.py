@@ -1,5 +1,6 @@
 import drone
 import utils
+import routines
 
 WORLD_SIZE = get_world_size()
 
@@ -203,7 +204,7 @@ def farm():
 	apple = measure()
 
 	while True:
-		drone.zig_zag_farm()
+		routines.zig_zag_farm()
 
 if __name__ == '__main__':
 	clear()

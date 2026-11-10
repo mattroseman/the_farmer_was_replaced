@@ -1,5 +1,5 @@
 import drone
-import cactus_farm
+import routines
 
 WORLD_SIZE = get_world_size()
 
@@ -90,15 +90,15 @@ def swap_neighbors():
 # runs a pass through the world, visiting each neighbor and swapping if they're out of order
 def bubble_sort_pass():
 	sorted = False
-	
+
 	while not sorted:
 		swap_state = [False]
+
+		def swap_and_track():
+			swap_made = swap_neighbors()
+			swap_state[0] = swap_state[0] or swap_made
 		
-		def track_swaps(swaps_made):
-			if swaps_made:
-				swap_state[0] = True
-		
-		drone.for_each_plot(swap_neighbors, track_swaps)
+		routines.for_each_plot(swap_and_track)
 		
 		# if no swaps were made, consider world sorted
 		sorted = not swap_state[0]
@@ -118,8 +118,9 @@ def sort(ascending=True):
 	return
 	
 if __name__ == '__main__':
-	# clear()
-	# cactus_farm.plant_world()
+	clear()
+	import crops
+	routines.for_each_plot_threaded(crops.handle_cactus)
 	sort()
 	
 	

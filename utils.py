@@ -216,6 +216,25 @@ def wait_ticks(ticks):
 		# pass takes one tick
 		pass
 
+# calls the operation function with args, if args provided
+# otherwise calls it without any arguments at all
+def optional_args(operation, args=()):
+	if args == () or args == None:
+		operation()
+	else:
+		operation(args)
+
+# wraps the call of the given operation with the given args in a
+# wrapper function with no args
+def with_args(operation, args=()):
+	def wrapper():
+		if args != () and args != None:
+			operation(args)
+		else:
+			operation
+
+	return wrapper
+
 # prints the given error message, repeatedly
 # WARNING: THIS FUNCTION CONTAINS AN INFINITE LOOP
 def error(message):

@@ -128,70 +128,9 @@ def is_top_right():
 	
 	return x == world_size - 1 and y == world_size - 1
 	
-# traverses over the whole world in a zig zag motion
-def zig_zag_farm():
-	move_to(0, 0)
-	move(North)
-	for zig_zag_i in range(WORLD_SIZE // 2):
-		for _ in range(WORLD_SIZE - 2):
-			move(North)
-			
-		move(East)
-
-		for _ in range(WORLD_SIZE - 2):
-			move(South)
-
-		if zig_zag_i != WORLD_SIZE // 2:
-			move(East)
-
-	move(South)
-	for _ in range(WORLD_SIZE):
-		move(West)
-
-# traverses the world, visiting each plot, and performs the given operation
-# (optional) calls the callback with the return value of operation after each call
-def for_each_plot(operation, callback=None):
-	move_to(0, 0) 
-	for _ in range(WORLD_SIZE):
-		for _ in range(WORLD_SIZE):
-			return_value = operation()
-			if callback != None:
-				callback(return_value)
-			move(East)
-		move(North)
-
-	move_to(0, 0)
-
-# randomly move about and perform given operation at each plot
-def perambulate(operation, should_stop=None):
-	while should_stop == None or not should_stop():
-		direction = utils.get_random_direction()
-		move(direction)
-		operation()
-
-def perambulate_no_wrap(operation, should_stop=None):
-	while should_stop == None or not should_stop():
-		(x, y) = (get_pos_x(), get_pos_y())
-		direction = utils.get_random_direction()
-		while not utils.inbounds(utils.shift((x, y), direction)):
-			direction = utils.get_random_direction()
-
-		move(direction)
-		operation()
-	
 def wait_around():
 	while True:
 		pass
-
-# waits for children threads to complete, then returns a list of their results
-def wait_for_children(children):
-	results = []
-	for thread in children:
-		result = wait_for(thread)
-		results.append(result)
-		
-	return results
-
 				
 if __name__ == '__main__':
 	move_to(1,1)
