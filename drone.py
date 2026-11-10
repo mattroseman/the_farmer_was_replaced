@@ -130,6 +130,20 @@ def for_each_plot(operation, callback=None):
 		move(North)
 
 	move_to(0, 0)
+	
+def wait_around():
+	while True:
+		pass
+
+# waits for children threads to complete, then returns a list of their results
+def wait_for_children(children):
+	results = []
+	for thread in children:
+		result = wait_for(thread)
+		results.append(result)
+		
+	return results
+
 				
 if __name__ == '__main__':
 	move_to(1,1)

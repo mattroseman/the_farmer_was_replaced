@@ -194,6 +194,20 @@ def get_random_num(range_min, range_max):
 
 	return num
 
+def coinflip():
+	if random() >= 0.50:
+		return True
+	return False
+	
+def wait_ticks(ticks):
+	# minus three for:
+	# 1. tick for the function call
+	# 2. tick for the for loop to start
+	# 3. tick for math done to subtrack these listed ticks
+	for _ in range(ticks - 3):
+		# pass takes one tick
+		pass
+
 # prints the given error message, repeatedly
 # WARNING: THIS FUNCTION CONTAINS AN INFINITE LOOP
 def error(message):

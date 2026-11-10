@@ -65,6 +65,8 @@ def plant_world():
 		
 if __name__  == '__main__':
 	clear()
+	set_world_size(10)
+	WORLD_SIZE = get_world_size()
 	start_time = get_time()
 	farm_once()
 	end_time = get_time()
