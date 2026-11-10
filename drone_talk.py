@@ -64,6 +64,20 @@ def sonar_for_time(seconds, callback=None):
 
 	return sonar(timer_wrapper, True, callback)
 
+MORSE_CODE = {
+	
+}
+
+def send(message):
+	pass
+
+def receive():
+	pass
+
+def initiate_handshake():
+	send()
+	
+
 if __name__ == '__main__':
 	while True:
 		sonar_until_response()

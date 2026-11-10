@@ -1,4 +1,4 @@
-set_world_size(20)
+# set_world_size(20)
 # set_execution_speed(1)
 
 import drone
@@ -40,12 +40,24 @@ def perambulate_and_greet():
 	# dawn a party hat
 	drone.wear_random_hat()
 
-	def sonar_then_greet():
-		def greet(prongs):
-			do_a_flip()
-		response = drone_talk.sonar_for_time(1, greet)
+	def sonar_then_handshake():
+		def handshake(response_directions):
+			neighbor_direction = None
+			if North in response_directions:
+				neighbor_direction = North
+			elif East in response_directions:
+				neighbor_direction = East
+			elif South in response_directions:
+				neighbor_direction = South
+			elif West in response_directions:
+				neighbor_direction = West
 
-	drone.perambulate_no_wrap(sonar_then_greet)
+			if neighbor_direction != None:
+				drone_talk.initiate_handshake(neighbor_direction)
+
+		response = drone_talk.sonar_for_time(1, handshake)
+
+	drone.perambulate_no_wrap(sonar_then_handshake)
 
 def party(num_attending=max_drones()):
 	for _ in range(num_attending):
@@ -54,7 +66,7 @@ def party(num_attending=max_drones()):
 		drone_thread.new_thread(go_to_spawn_and_mingle)
 	
 if __name__ == '__main__':
-	party(8)
+	party(max_drones())
 
 # IDEAS:
 	# have drones constantly looking around, and quickly planting something and harvesting it
