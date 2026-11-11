@@ -89,6 +89,10 @@ def move_to(x, y):
 				
 			current_y = get_pos_y()
 			
+def move_to_center():
+	center = (WORLD_SIZE // 2, WORLD_SIZE // 2)
+	move_to(center[0], center[1])
+			
 def look_around(sense, no_wrap=False):
 	# if no_wrap specified, don't look past the world edges, to the other side
 	if no_wrap:

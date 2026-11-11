@@ -104,4 +104,5 @@ def farm(should_stop=None):
 
 if __name__ == '__main__':
 	clear()
-	utils.performance_test_farm(farm, 5 * 60)
+	farm()
+	# utils.performance_test_farm(farm, 5 * 60)

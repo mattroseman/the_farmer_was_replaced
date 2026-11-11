@@ -1,6 +1,3 @@
-set_world_size(5)
-# set_execution_speed(1)
-
 import drone
 import utils
 import drone_thread
@@ -42,24 +39,45 @@ def perambulate_and_greet():
 	# dawn a party hat
 	drone.wear_random_hat()
 
-	should_stop_state = [False]
-	def handshake_completed(direction):
-		should_stop_state[0] = True
+	# drone_talk.FOLLOWING or drone_talk.LEADING
+	drone_state = [None]
+	def handshake_completed(handshake_result):
+		# if handshake failed
+		if handshake_result == None or handshake_result == False:
+			# don't stop perambulating
+			return False
+		else:
+			# otherwise handshake result is the state of this drone, i.e. following or leading
+			drone_state[0] = handshake_result
+			return True
 
-	def should_stop():
-		return should_stop_state[0]
+	routines.perambulate_no_warp(drone_talk.sonar_then_handshake, handshake_completed)
 
-	drone.perambulate_no_wrap(drone_talk.sonar_then_handshake, None, True)
+	leading = drone_state[0] == drone_talk.LEADING
+	if leading:
+		print("I'm the leader!")
+	else:
+		print("I'm following")
 
-def prepare_for_party():
+	drone.wait_around()
+
+def prepare_for_party() -> None:
 	def prepare_plot_for_party():
 		harvest()
 		crops.set_tilled()
+		possible_crops = [
+			Entities.Bush,
+			Entities.Tree,
+			Entities.Grass,
+			Entities.Carrot,
+			Entities.Sunflower
+		]
+		plant(utils.get_random_from_list(possible_crops))
 
 	routines.for_each_plot_threaded(prepare_plot_for_party)
 	
 
-def party(num_attending=max_drones()):
+def party(num_attending: int=max_drones()) -> None:
 	prepare_for_party()
 
 	for _ in range(num_attending):
@@ -68,7 +86,7 @@ def party(num_attending=max_drones()):
 		drone_thread.new_thread(go_to_spawn_and_mingle)
 	
 if __name__ == '__main__':
-	party(2)
+	party(max_drones())
 
 # IDEAS:
 	# have drones constantly looking around, and quickly planting something and harvesting it

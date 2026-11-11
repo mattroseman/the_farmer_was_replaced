@@ -92,7 +92,7 @@ def perambulate(operation, should_stop=None):
 			return
 
 # same as perambulate, but won't warp to otherside of world
-def perambulate_no_warp(operation, should_stop=None):
+def perambulate_no_warp(operation: function, should_stop: function=None) -> None:
 	while True:
 		(x, y) = (get_pos_x(), get_pos_y())
 		direction = utils.get_random_direction()

@@ -6,9 +6,9 @@ def build_shift_and_doer(direction, operation, args=()):
 	def shift_then_do():
 		move(direction)
 		if args == () or args == None:
-			operation()
+			return operation()
 		else:
-			operation(args)
+			return operation(args)
 
 	return shift_then_do
 

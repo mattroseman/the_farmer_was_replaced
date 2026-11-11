@@ -11,7 +11,7 @@ FIELD_PATTERN = [
 
 # if specified, polyculture farm will only plant companions for this crop type
 # maximizing it's production rate
-maximized_crop = None
+maximized_crop = Entities.Tree
 
 # mapping of coordinates to companions, which are dicts of 'position' and 'crop'
 # indicates the companion of the key'd crop

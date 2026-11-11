@@ -1,1 +1,1 @@
-leaderboard_run(Leaderboards.Maze, 'maze_leaderboard', 1000)
+leaderboard_run(Leaderboards.Sunflowers, 'sunflower_leader', 1000)

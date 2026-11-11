@@ -90,6 +90,15 @@ def reverse_map(map):
 
 	return reverse_map
 
+# reverses the given list
+def reverse_list(l):
+	reverse = []
+	for i in range(len(l) - 1, -1, -1):
+		reverse.append(l[i])
+
+	return reverse
+
+
 def is_tilled_crop(crop):
 	return array_contains(TILLED_CROPS, crop)
 	
@@ -186,6 +195,10 @@ def randomize_list(items):
 		items[j] = tmp
 
 	return items
+
+def get_random_from_list(items):
+	i = random() * len(items) // 1
+	return items[i]
 
 def get_randomized_directions():
 	directions_copy = copy_list(DIRECTIONS)

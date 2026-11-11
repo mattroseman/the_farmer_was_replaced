@@ -9,3 +9,7 @@
 # misc:
 #   try fertilizer on pumpkin farm (does it prevent dead pumpkins?)
 #   weird substance farm?
+
+import drone
+set_world_size(11)
+drone.wait_around()
