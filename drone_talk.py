@@ -1,25 +1,55 @@
-set_world_size(5)
-
 import drone
 import utils
 
-# when a drone is pinging, use ping crop
-PING_CROP = Entities.Bush
-# when a drone has detected a neighbor, use directional crop to synchronize with neighbor
-DIRECTIONAL_CROP = {
-	North: Entities.Tree,
-	East: Entities.Grass,
-	South: Entities.Carrot,
-	West: Entities.Sunflower
-}
 LISTEN_TICKS = 1000
 # when a drone detects another drone, it may wait a grace period of ticks to give the other drone a chance to see it
 GRACE_TICKS = 250
 
 HANDSHAKE_TICKS_WAIT = 450
 
-def ping():
-	plant(PING_CROP)
+# ping crop and directional crops are for drones to recognize each other and orient each other
+PING_CROP = Entities.Bush
+GENERIC_PONG = 'generic'
+DIRECTIONAL_CROP = {
+	North: Entities.Tree,
+	East: Entities.Grass,
+	South: Entities.Carrot,
+	West: Entities.Sunflower
+}
+DIRECTED_PONG = 'directed'
+# symbols and digits are for communicating after a handshake is established
+SYMBOLS = {
+	0: Entities.Bush,
+	1: Entities.Tree,
+	2: Entities.Grass,
+	3: Entities.Carrot,
+	4: Entities.Sunflower
+}
+DIGITS = utils.reverse_map(SYMBOLS) 
+
+FOLLOWING = 'following'
+LEADING = 'leading'
+
+# encode a digit 0-4 into the corresponding symbol (crop)
+def encode(digit):
+	if digit not in SYMBOLS:
+		utils.error('digit ' + str(digit) + ' has no corresponding symbol')
+	return SYMBOLS[digit]
+
+# decode a crop (symbol) into the corresponding digit
+def decode(symbol):
+	# unknown symbols are expected, and should be ignored
+	if symbol not in DIGITS:
+		return None
+	return DIGITS[symbol]
+
+def ping(direction=None):
+	# plant directional ping
+	if direction:
+		plant(DIRECTIONAL_CROP[direction])
+	# plant generic ping
+	else:
+		plant(PING_CROP)
 	
 # looks around the drone for evidence of a ping from a fellow drone
 # returns a dict of each direction and a string if a pong was heard
@@ -31,7 +61,7 @@ def ping():
 # 	South: None,
 #	West: 'generic'
 # }
-def listen():
+def listen() -> dict:
 	# None means no pong heard, 'directed' means directed pong heard, and 'generic' means generic pong heard
 	pongs = {
 		North: None,
@@ -54,16 +84,18 @@ def listen():
 		echo = drone.look_around(get_entity_type)
 		for direction in utils.DIRECTIONS:
 			pong = echo[direction]
+
 			if pong == PING_CROP:
-				pongs[direction] = 'generic'
+				pongs[direction] = GENERIC_PONG
 			elif pong == DIRECTIONAL_CROP[utils.OPPOSITE_DIRECTION[direction]]:
-				pongs[direction] = 'directed'
+				pongs[direction] = DIRECTED_PONG
 			# if the direction shows a directional crop in the wrong way, reset pong state
 			elif pong != None:
 				pongs[direction] = None
 
-		# if a directed pong was heard leave early
+		# decide to leave
 		for direction in pongs:
+			# if a directed pong was heard, leave early
 			if pongs[direction] == 'directed':
 				return pongs
 
@@ -74,7 +106,8 @@ def listen():
 				
 	return pongs
 	
-def sonar(should_stop=None, leave_asap=False):
+# pings surrounding drones by planted crops, and listens for the pings of other drones
+def sonar(should_stop: function=None):
 	# set that tracks directions of responses
 	# gets reset each cycle
 	pongs = None
@@ -82,32 +115,19 @@ def sonar(should_stop=None, leave_asap=False):
 		ping()
 		pongs = listen()
 		if pongs != None and len(pongs) > 0:
-			if leave_asap:
-				break
+			break
 
+	# clean up any ping crops
 	harvest()
 
 	return pongs
-		
-def sonar_until_response(callback=None, time_limit=None):
-	def echo_heard(pong_directions=set()):
-		return pong_directions != None and len(pong_directions) > 0
-		
-	return sonar(echo_heard, True, callback)
 
-def sonar_for_time(seconds, callback=None):
-	timer = utils.get_timer(seconds)
-	# wrapper to take the args parameter, since sonar passes ping resposnes
-	def timer_wrapper(args):
-		return timer()
-
-	return sonar(timer_wrapper, True, callback)
-
-# sonars for a given time, and then returns
-# if a response is heard, sonar is exited early and handshake is initiated
-# returns direction if handshake completed with neighbor, None otherwise
-def sonar_then_handshake():
+# sonars for a given time, or until a response is heard, then attempts handshake
+# returns (direction of handshake, state of this drone in relations), or None if sonar times out or handshake fails
+def sonar_then_handshake() -> tuple[Direction, str] | None:
 	timer = utils.get_timer(1)
+
+	# should-stop function for sonar
 	def response_received_or_time_up(pongs):
 		# if a response was heard
 		if pongs != None and len(pongs) > 0:
@@ -116,7 +136,8 @@ def sonar_then_handshake():
 		if timer():
 			return True
 
-	response = sonar(response_received_or_time_up, True)
+	response = sonar(response_received_or_time_up)
+
 	neighbor_direction = None
 	for direction in response:
 		# any directed pongs take precedence
@@ -129,71 +150,67 @@ def sonar_then_handshake():
 
 
 	if neighbor_direction != None:
-		handshake(neighbor_direction)
+		return handshake(neighbor_direction)
 
-	drone.wait_around()
+	return None
 
-def handshake(direction):
-	# the syn that was already planted (used later to avoid sending the same one again)
+# attempts to handshake with drone in given direction
+# returns the drone's state in relationship (FOLLOWING or LEADING), if handshake succeeds
+# returns None if handshake fails
+def handshake(direction: Direction) -> str:
+	# PHASE 1: DIRECTIONAL PING
+	# phase 1 involves changing the ping crop to one specifying the direction of the ping
+	# so if you have a neighbor to the North (handshake(North)) you plant a DIRECTIONAL_CROP[North]
+
+	# SYN stands for synchronization, as in SYN, SYN-ACK, ACK protocol
 	syn = DIRECTIONAL_CROP[direction]
 	expected_ack = DIRECTIONAL_CROP[utils.OPPOSITE_DIRECTION[direction]]
 
-	plant(DIRECTIONAL_CROP[direction])
+	ping(direction)
 
 	ack_received = drone.wait_for_crop(expected_ack, direction, HANDSHAKE_TICKS_WAIT)
-	# TODO look into waiting here to let other drone see your first SYN crop
+	# wait a little for your neighbor to see your directional syn crop
+	utils.wait_ticks(GRACE_TICKS)
 
-	if ack_received:
-		# print('ack recieved')
-		# if you've received an ACK and you're neighbor is South/West of you, send a SYN message
-		if direction == South or direction == West:
-			syn2 = None
-			# make sure the second sync isn't the crop used for the first, or have an expected response
-			# equal to the ACK the other drone just sent (ensuring for a proper ACK a new crop must be planted)
-			while syn2 == None or syn2 == syn or (DIGITS[syn2] + 1) % len(SYMBOLS) == DIGITS[expected_ack]:
-				syn2 = encode(random() * len(SYMBOLS) // 1)
-			harvest()
-			plant(syn2)
-			expected_ack2 = encode((decode(syn2) + 1) % len(SYMBOLS))
+	if not ack_received:
+		return False
 
-			ack2_received = drone.wait_for_crop(expected_ack2, direction, HANDSHAKE_TICKS_WAIT)
-			if ack2_received:
-				print("Handshake success, I'm leading")
-				return True
-		# otherwise wait for your neighbors SYN
-		else:
-			received_syn = drone.wait_for_crop_except([expected_ack], direction, HANDSHAKE_TICKS_WAIT)
-			if received_syn == None:
-				return False
+	# PHASE 2: CHALLENGE SYN/ACK
+	# Your neighbor has a directional crop pointing to you and you have one pointing to them
+	# now confirm it's a drone, and not happenstance, by changing the SYN and ACK
 
-			ack = encode((decode(received_syn) + 1) % len(SYMBOLS))
+	# The North or East neighbor sends a random SYN (different from PHASE 1 crops),
+	# and the South or West neighbor responds with SYN + 1 as the ACK
+	# This establishes the north/east drone as the leader, and the south/west drone as the follower
+	if direction == South or direction == West:
+		# choose new SYN crop, different from the first directional ping crop,
+		# or whose expected ACK is what your neighbor already has
+		syn2 = None
+		while syn2 == None or syn2 == syn or (DIGITS[syn2] + 1) % len(SYMBOLS) == DIGITS[expected_ack]:
+			syn2 = encode(random() * len(SYMBOLS) // 1)
+		expected_ack2 = encode((decode(syn2) + 1) % len(SYMBOLS))
 
-			harvest()
-			plant(ack)
-			print("Handshake success, I'm following")
+		harvest()
+		plant(syn2)
+
+		ack2_received = drone.wait_for_crop(expected_ack2, direction, HANDSHAKE_TICKS_WAIT)
+		if ack2_received:
+			print("Handshake success, I'm leading")
 			return True
+	# otherwise wait for your neighbor's SYN
+	else:
+		received_syn = drone.wait_for_crop_except([expected_ack], direction, HANDSHAKE_TICKS_WAIT)
+		if received_syn == None:
+			return False
+
+		ack = encode((decode(received_syn) + 1) % len(SYMBOLS))
+
+		harvest()
+		plant(ack)
+		print("Handshake success, I'm following")
+		return True
 
 	return False
-
-SYMBOLS = {
-	0: Entities.Bush,
-	1: Entities.Tree,
-	2: Entities.Grass,
-	3: Entities.Carrot,
-	4: Entities.Sunflower
-}
-DIGITS = utils.reverse_map(SYMBOLS) 
-
-def encode(digit):
-	if digit not in SYMBOLS:
-		utils.error('digit ' + str(digit) + ' has no corresponding symbol')
-	return SYMBOLS[digit]
-
-def decode(symbol):
-	# unknown symbols are expected, and should be ignored
-	if symbol not in DIGITS:
-		return None
-	return DIGITS[symbol]
 
 # def send(message):
 # 	# send message digit at a time
