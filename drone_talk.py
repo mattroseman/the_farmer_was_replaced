@@ -253,7 +253,7 @@ if __name__ == '__main__':
 	import crops
 	import routines
 
-	routines.for_each_plot_threaded(crops.set_tilled)
+	routines.till_world()
 
 	# set_execution_speed(1)
 

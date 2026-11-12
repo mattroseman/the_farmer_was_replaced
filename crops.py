@@ -1,5 +1,11 @@
 import utils
 
+# crops states
+NORMAL = 'normal'
+DEAD = 'dead'
+INFECTED = 'infected'
+CURED = 'cured'
+
 def set_tilled():
 	if get_ground_type() != Grounds.Soil:
 		till()
@@ -116,6 +122,26 @@ CROP_HANDLERS = {
 }
 def get_crop_handler(crop):
 	return CROP_HANDLERS[crop]
+
+# plants a pumpkin of the given state, retrying if necessary
+# WARNING: waits for pumpkin to grow
+# see states above for state "enum"
+def plant_pumpkin_retry(state=NORMAL):
+	set_tilled()
+	plant(Entities.Pumpkin)
+	if state == INFECTED:
+		use_item(Items.Fertilizer)
+	if state == CURED:
+		use_item(Items.Fertilizer)
+		use_item(Items.Weird_Substance)
+	while not can_harvest():
+		plant(Entities.Pumpkin)
+		if state == INFECTED:
+			use_item(Items.Fertilizer)
+		if state == CURED:
+			use_item(Items.Fertilizer)
+			use_item(Items.Weird_Substance)
+
 		
 if __name__ == '__main__':
 	clear()

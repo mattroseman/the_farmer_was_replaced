@@ -4,7 +4,7 @@ import drone
 import drone_thread
 import utils
 
-import dl_partitioner
+import partitioner
 
 WORLD_SIZE = get_world_size()
 
@@ -14,12 +14,12 @@ def harvest_sunflower_partition(sunflower_positions):
 		harvest()
 	
 def harvest_sunflowers(sunflower_positions) -> None:
-	drone.move_to_center()
+	# drone.move_to_center()
 	children = set()
 
 	available_drones = max_drones() - num_drones()
 	num_partitions = min(available_drones, len(sunflower_positions))
-	partitions = dl_partitioner.front_loaded_partition(sunflower_positions, num_partitions)
+	partitions = partitioner.front_loaded_partition(sunflower_positions, num_partitions)
 
 	for partition in partitions:
 		child = drone_thread.new_thread(harvest_sunflower_partition, None, partition)
@@ -29,7 +29,8 @@ def harvest_sunflowers(sunflower_positions) -> None:
 
 def plant_and_measure():
 	crops.handle_sunflower()
-	return measure()
+	measurement = measure()
+	return measurement
 
 def plant_column(start_position: tuple[int, int]) -> dict[int, list[tuple[int, int]]]:
 	position = start_position
@@ -80,7 +81,8 @@ def farm(should_stop: function=None):
 		measurements = plant_column((x, y))
 		(x, y) = (get_pos_x(), get_pos_y())
 		for measurement in range(15, 6, -1):
-			harvest_sunflowers(measurements[measurement])
+			if measurement in measurements:
+				harvest_sunflowers(measurements[measurement])
 	
 if __name__ == '__main__':
 	clear()

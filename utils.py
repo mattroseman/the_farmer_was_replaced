@@ -98,6 +98,25 @@ def reverse_list(l):
 
 	return reverse
 
+# sums the given list
+# Nones ignored
+def sum_list(l):
+	sum = 0
+	for elem in l:
+		if elem == None:
+			continue
+
+		sum += elem
+	return sum
+
+# averages the given list
+# Nones ignored
+def avg_list(l):
+	sum = sum_list(l)
+	length = len(l)
+
+	avg = sum / length
+	return avg
 
 def is_tilled_crop(crop):
 	return array_contains(TILLED_CROPS, crop)

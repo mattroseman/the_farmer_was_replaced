@@ -29,58 +29,114 @@ def zig_zag_farm():
 		move(West)
 
 # traverses the world and performs operation on each plot
-def for_each_plot(operation, should_stop=None):
+# returns a dictionary of each plot's result
+def for_each_plot(operation: function, should_stop: function=None) -> dict[tuple, any]:
 	drone.move_to(0, 0)
+	position = (0, 0)
+
+	results = {} 
 
 	for _ in range(WORLD_SIZE):
 		for _ in range(WORLD_SIZE):
-			result = operation()
+			result = operation(position)
+			results[position] = result
+
 			if should_stop != None and should_stop(result):
-				return
+				return results
+
 			move(East)
+			position = utils.shift(position, East)
 		move(North)
+		position = utils.shift(position, North)
 
 	drone.move_to(0, 0)
+	position = (0, 0)
+
+	return results
 
 # spawns drones to traverse the world and perform operation on each plot
-def for_each_plot_threaded(operation, should_stop=None):
+# operation(position) is expected to take one arg, the position the drone is on
+# should_stop(result) is expected to take one arg, the result of the operation, and return True if the drone should stop
+# return {(0, 0): measurement, (0, 1): measurement,...} is dict of positions visited and measurements taken
+def for_each_plot_threaded(
+		operation: function,
+		should_stop: function = None,
+	) -> any | None:
 	drone.move_to(0, 0)
 	(x, y) = (0, 0)
-
+	
 	def traverse_column(start_position):
+		position = start_position
 		last_column = start_position[0] >= (WORLD_SIZE - 1)
-
+		
+		results = {}
 		children = set()
 
 		# spawn a drone for the column to the East
 		if not last_column:
-			child = drone_thread.new_thread(traverse_column, East, utils.shift(start_position, East))
+			child = drone_thread.new_thread(traverse_column, East, utils.shift(position, East))
 			children.add(child)
 
 		for y in range(start_position[1], WORLD_SIZE):
 			last_row = y >= (WORLD_SIZE - 1)
 
-			result = operation()
+			result = operation(position)
+			results[position] = result
+
 			if should_stop != None and should_stop(result):
-				return
+				return results
 
 			if not last_row:
 				move(North)
+				position = utils.shift(position, North)
 
 		# wait for children drones to finish
 		for child in children:
-			wait_for(child)
+			child_results = wait_for(child)
+
+			# copy over the results for each position the child visited
+			for child_position in child_results:
+				results[child_position] = child_results[child_position]
 
 		# if last drone, return to 0, 0
 		if num_drones() == 1:
 			drone.move_to(0, 0)
 
-	traverse_column((x, y))
+		return results
+
+	results = traverse_column((x, y))
+	return results
+
+# performs the given operation for each column, dispatching drones
+# assume drone starts at position y = 0
+# should_stop is passed to the operation function
+def for_each_column_threaded(operation: function, should_stop: function=None):
+	drone.move_to(0, 0)
+	position = [(0, 0)]
+
+	# wrapper around operation to first spawn the drone for the next column (if there is one)
+	def spawn_next_drone_then_do():
+		position[0] = utils.shift(position[0], East)
+		last_column = position[0][0] == WORLD_SIZE - 1
+
+		if not last_column:
+			drone_thread.new_thread(spawn_next_drone_then_do, East)
+
+		operation(should_stop)
+
+	drone_thread.new_thread(spawn_next_drone_then_do, East)
+
+	operation(should_stop)
+
 
 def till_world():
-	for_each_plot_threaded(crops.set_tilled)
+	def set_tilled_wrapper(position):
+		crops.set_tilled()
+	for_each_plot_threaded(set_tilled_wrapper)
 def untill_world():
-	for_each_plot_threaded(crops.set_untilled)
+	def set_untilled_wrapper(position):
+		crops.set_untilled
+	for_each_plot_threaded(set_untilled_wrapper)
 
 # randomly move about and perform given operation at each plot
 def perambulate(operation, should_stop=None):
@@ -104,4 +160,26 @@ def perambulate_no_warp(operation: function, should_stop: function=None) -> None
 		result = operation()
 		if should_stop != None and should_stop(result):
 			return
+
+def fill_world_pumpkin():
+	def fill_column_pumpkin():
+		pumpkin_fills_world = False
+
+		while not pumpkin_fills_world:
+			measurements = []
+
+			# traverse column
+			for _ in range(WORLD_SIZE):
+				if get_entity_type() != Entities.Pumpkin:
+					crops.handle_pumpkin()
+
+				measurement = measure()
+				measurements.append(measurement)
+
+				move(North)
+
+			pumpkin_fills_world = len(set(measurements)) == 1
+		return
+
+	for_each_column_threaded(fill_column_pumpkin)
 	

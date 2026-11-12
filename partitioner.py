@@ -82,7 +82,7 @@ def front_weighted_partition_load(items: list, smallest_partition: int=10) -> li
 
 	return partitions
 
-LARGEST_SMALLEST_PARTITION_RATIO = 0.5
+LARGEST_SMALLEST_PARTITION_RATIO = 0.4
 
 # partition the items off of the arithmetic series: each next partition smaller by a constant size
 # e.g. partition sizes 16, 14, 12, 10, 8 
@@ -124,7 +124,22 @@ def front_loaded_partition(items: list, num_partitions: int):
 
 	return partitions
 
-	
+# returns a list of lists, that is an even partition of items
+def partition(items: list, num_partitions: int):
+	len_items = len(items)
+	partition_size = len_items // num_partitions
+	remainder = len_items % num_partitions
 
+	partition_starts = range(0, partition_size * num_partitions, partition_size)
 
+	partitions = []
+	for i in range(num_partitions):
+		partition_start = partition_starts[i]
+		if i < num_partitions - 1:
+			partition_end = partition_starts[i+1]
+		else:
+			partition_end = len_items - 1
 
+		partitions.append(items[partition_start:partition_end])
+
+	return partitions

@@ -62,7 +62,7 @@ def perambulate_and_greet():
 	drone.wait_around()
 
 def prepare_for_party() -> None:
-	def prepare_plot_for_party():
+	def prepare_plot_for_party(position):
 		harvest()
 		crops.set_tilled()
 		possible_crops = [

@@ -120,7 +120,9 @@ def sort(ascending=True):
 if __name__ == '__main__':
 	clear()
 	import crops
-	routines.for_each_plot_threaded(crops.handle_cactus)
+	def handle_cactus_wrapper(position):
+		crops.handle_cactus()
+	routines.for_each_plot_threaded(handle_cactus_wrapper)
 	sort()
 	
 	
