@@ -86,9 +86,48 @@ def array_contains(array, value):
 def reverse_map(map):
 	reverse_map = {}
 	for key in map:
-		reverse_map[map[key]] = key
+		value = map[key]
+
+		if value in reverse_map:
+			reverse_map[value].append(key)
+		else:
+			reverse_map[value] = [key]
 
 	return reverse_map
+
+# returns the keys of the given dictionary d, sorted by their respective values
+def get_dict_keys_sorted_by_values(d):
+	values_to_keys = reverse_map(d)
+	values = []
+	for key in d:
+		values.append(d[key])
+	# remove duplicate values
+	values = list(set(values))
+
+	sorted_keys = []
+	sorted_values = sort(values)
+	for value in sorted_values:
+		for key in values_to_keys[value]:
+			sorted_keys.append(key)
+
+	return sorted_keys
+
+def sort(l):
+	items_swapped = False
+
+	for i in range(len(l) - 1):
+		item = l[i]
+		next_item = l[i+1]
+
+		if item > next_item:
+			l[i] = next_item
+			l[i+1] = item
+			items_swapped = True
+
+	if not items_swapped:
+		return l
+	else:
+		return sort(l)
 
 # reverses the given list
 def reverse_list(l):

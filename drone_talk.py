@@ -25,7 +25,13 @@ SYMBOLS = {
 	3: Entities.Carrot,
 	4: Entities.Sunflower
 }
-DIGITS = utils.reverse_map(SYMBOLS) 
+DIGITS = {
+	Entities.Bush: 0,
+	Entities.Tree: 1,
+	Entities.Grass: 2,
+	Entities.Carrot: 3,
+	Entities.Sunflower: 4
+}
 
 FOLLOWING = 'following'
 LEADING = 'leading'

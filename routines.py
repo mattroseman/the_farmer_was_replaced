@@ -28,6 +28,76 @@ def zig_zag_farm():
 	for _ in range(WORLD_SIZE):
 		move(West)
 
+# moves the drone in a looping zig zag within the area
+# encompassed by coordinates bottom_left and top_right
+# bottom_left[0] <= x < top_right[0]
+# bottom_left[1] <= y < top_right[1]
+def zig_zag_area(bottom_left, top_right, operation: function, callback: function=None, row_callback: function=None):
+	num_rows = top_right[1] - bottom_left[1]
+	area_width = top_right[0] - bottom_left[0]
+	bottom_right = (top_right[0], bottom_left[1])
+	top_left = (bottom_left[0], top_right[1])
+
+	position = (get_pos_x(), get_pos_y())
+	closest_corner = None
+	closest_distance = None
+	for corner in [bottom_left, bottom_right, top_right, top_left]:
+		distance = utils.distance(position, corner)
+		if closest_distance == None or distance < closest_distance:
+			closest_corner = corner
+
+	drone.move_to(closest_corner[0], closest_corner[1])
+
+	on_a_zig = [closest_corner == bottom_left or closest_corner == top_left]
+	ascending = [closest_corner == bottom_left or closest_corner == bottom_right]
+	def zig():
+		results = []
+		for _ in range(area_width):
+			result = operation()
+			if callback != None:
+				callback(result)
+			results.append(result)
+			move(East)
+		return results
+	def zag():
+		results = []
+		for _ in range(area_width):
+			result = operation()
+			if callback != None:
+				callback(result)
+			results.append(result)
+			move(West)
+		return results
+	def zig_or_zag():
+		if on_a_zig[0]:
+			results = zig()
+			row_callback(results)
+			on_a_zig[0] = False
+		else:
+			results = zag()
+			row_callback(results)
+			on_a_zig[0] = True
+
+	def ascend_or_descend():
+		if ascending[0]:
+			move(North)
+			ascending[0] = False
+		else:
+			move(South)
+			ascending[0] = True
+
+
+	zig_or_zag()
+
+	for _ in range(num_rows - 1):
+		ascend_or_descend()
+		zig_or_zag()
+
+	# loop back to where you started
+	for _ in range(num_rows-1):
+		ascend_or_descend()
+
+
 # traverses the world and performs operation on each plot
 # returns a dictionary of each plot's result
 def for_each_plot(operation: function, should_stop: function=None) -> dict[tuple, any]:

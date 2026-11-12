@@ -138,7 +138,7 @@ def partition(items: list, num_partitions: int):
 		if i < num_partitions - 1:
 			partition_end = partition_starts[i+1]
 		else:
-			partition_end = len_items - 1
+			partition_end = len_items
 
 		partitions.append(items[partition_start:partition_end])
 
