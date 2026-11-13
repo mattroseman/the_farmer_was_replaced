@@ -136,6 +136,9 @@ def wait_around():
 	while True:
 		pass
 
+def do_nothing():
+	pass
+
 # waits for the given crop in the given direction
 # optional timeout after the given number of ticks
 # returns True if the observed crop is the waited-for one, False if there was a timeout

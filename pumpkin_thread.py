@@ -7,7 +7,7 @@ import routines
 
 WORLD_SIZE = get_world_size()
 # min width and height for pumpkin to be harvested
-PUMPKIN_SIZE = 6
+PUMPKIN_SIZE = 7
 PATCH_SIZE = PUMPKIN_SIZE + 1
 MAX_WORLD_USED = (WORLD_SIZE // PATCH_SIZE) * PATCH_SIZE - 1
 
@@ -43,11 +43,14 @@ def plant_and_measure():
 	return measurement
 
 def farm_patch_rows(args):
-	(patch_zero, rows, should_stop) = args
+	(patch_zero, min_row, max_row, should_stop) = args
 
-	num_rows = len(rows)
+	num_rows = max_row - min_row + 1
 	if num_rows < 1:
 		utils.error('drone not given any rows to farm')
+
+	patch_rows_bottom_left = (patch_zero[0], patch_zero[1] + min_row)
+	patch_rows_top_right = (patch_zero[0] + PUMPKIN_SIZE - 1, patch_zero[1] + max_row)
 
 	# each zig or zag calls this callback with the row's measurements
 	def collect_row_measurements(measurements):
@@ -56,8 +59,8 @@ def farm_patch_rows(args):
 
 	while should_stop == None or not should_stop():
 		routines.zig_zag_area(
-			patch_zero,
-			(patch_zero[0] + PUMPKIN_SIZE - 1, patch_zero[1] + num_rows - 1),
+			patch_rows_bottom_left,
+			patch_rows_top_right,
 			plant_and_measure,
 			None,
 			collect_row_measurements
@@ -120,16 +123,21 @@ def farm(should_stop: function=None):
 			first_drone = drone_i == 0
 
 			if not (first_drone and first_patch):
+				min_row = min(drone_rows[drone_i])
+				max_row = max(drone_rows[drone_i])
+
 				go_to_patch_and_farm = drone_thread.build_move_to_and_doer(
 					patch_zero,
 					farm_patch_rows,
-					(patch_zero, drone_rows[drone_i], should_stop)  # args for farm_patch_rows
+					(patch_zero, min_row, max_row, should_stop)  # args for farm_patch_rows
 				)
 				drone_thread.new_thread(go_to_patch_and_farm)
 
 	# the first set of rows for the first patch hwas withheld, so now do that
 	# now that child drones are spawned, go do that
-	farm_patch_rows(((0, 0), drone_rows[0], should_stop))
+	min_row = min(drone_rows[0])
+	max_row = max(drone_rows[0])
+	farm_patch_rows(((0, 0), min_row, max_row, should_stop))
 
 
 if __name__ == '__main__':

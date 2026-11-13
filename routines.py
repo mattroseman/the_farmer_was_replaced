@@ -29,12 +29,12 @@ def zig_zag_farm():
 		move(West)
 
 # moves the drone in a looping zig zag within the area
-# encompassed by coordinates bottom_left and top_right
-# bottom_left[0] <= x < top_right[0]
-# bottom_left[1] <= y < top_right[1]
+# encompassed by coordinates bottom_left and top_right (inclusive both)
+# bottom_left[0] <= x <= top_right[0]
+# bottom_left[1] <= y <= top_right[1]
 def zig_zag_area(bottom_left, top_right, operation: function, callback: function=None, row_callback: function=None):
-	num_rows = top_right[1] - bottom_left[1]
-	area_width = top_right[0] - bottom_left[0]
+	num_rows = top_right[1] - bottom_left[1] + 1
+	area_width = top_right[0] - bottom_left[0] + 1
 	bottom_right = (top_right[0], bottom_left[1])
 	top_left = (bottom_left[0], top_right[1])
 
@@ -45,58 +45,70 @@ def zig_zag_area(bottom_left, top_right, operation: function, callback: function
 		distance = utils.distance(position, corner)
 		if closest_distance == None or distance < closest_distance:
 			closest_corner = corner
+			closest_distance = distance
+
+	ascending = closest_corner == bottom_left or closest_corner == bottom_right
 
 	drone.move_to(closest_corner[0], closest_corner[1])
 
 	on_a_zig = [closest_corner == bottom_left or closest_corner == top_left]
-	ascending = [closest_corner == bottom_left or closest_corner == bottom_right]
 	def zig():
 		results = []
-		for _ in range(area_width):
+
+		result = operation()
+		if callback != None:
+			callback(result)
+		results.append(result)
+		for i in range(area_width - 1):
+			move(East)
 			result = operation()
 			if callback != None:
 				callback(result)
 			results.append(result)
-			move(East)
+
 		return results
 	def zag():
 		results = []
-		for _ in range(area_width):
+
+		result = operation()
+		if callback != None:
+			callback(result)
+		results.append(result)
+		for i in range(area_width - 1):
+			move(West)
 			result = operation()
 			if callback != None:
 				callback(result)
 			results.append(result)
-			move(West)
+
 		return results
 	def zig_or_zag():
 		if on_a_zig[0]:
 			results = zig()
-			row_callback(results)
+			if row_callback != None:
+				row_callback(results)
 			on_a_zig[0] = False
 		else:
 			results = zag()
-			row_callback(results)
+			if row_callback != None:
+				row_callback(results)
 			on_a_zig[0] = True
-
-	def ascend_or_descend():
-		if ascending[0]:
-			move(North)
-			ascending[0] = False
-		else:
-			move(South)
-			ascending[0] = True
-
 
 	zig_or_zag()
 
 	for _ in range(num_rows - 1):
-		ascend_or_descend()
+		if ascending:
+			move(North)
+		else:
+			move(South)
 		zig_or_zag()
 
 	# loop back to where you started
 	for _ in range(num_rows-1):
-		ascend_or_descend()
-
+		if ascending:
+			move(South)
+		else:
+			move(North)
 
 # traverses the world and performs operation on each plot
 # returns a dictionary of each plot's result
@@ -253,3 +265,6 @@ def fill_world_pumpkin():
 
 	for_each_column_threaded(fill_column_pumpkin)
 	
+if __name__ == '__main__':
+	while True:
+		zig_zag_area((0, 0), (8, 3), till)
