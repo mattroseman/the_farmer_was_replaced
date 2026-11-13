@@ -3,6 +3,8 @@
 import utils
 import region_tree
 
+WORLD_SIZE = get_world_size()
+
 # # partition loads splits the given items list into partitions of diminishing size
 # # this is to better divide labor, where the first partition has more work, and each one after diminishes in size
 # def partition_load(items: list, num_partitions: int):
@@ -154,7 +156,7 @@ def partition(items: list, num_partitions: int) -> list[list]:
 # }
 # where the rectangular partitioned regions constitute the given starting region
 # partitions should be roughly equal size, but with likely variations
-def region_partition(region_zero, width, height, num_partitions):
+def partition_region(region_zero, width, height, num_partitions):
 	partitions_root = region_tree.build_region_tree(region_zero, width, height)
 
 	region_area = region_tree.get_area(partitions_root)

@@ -132,14 +132,18 @@ def get_dict_keys_sorted_by_values(d):
 
 	return sorted_keys
 
-def sort(l):
+def sort_by(l, ascending=True, comparator=is_greater_than):
 	items_swapped = False
 
 	for i in range(len(l) - 1):
 		item = l[i]
 		next_item = l[i+1]
 
-		if item > next_item:
+		if ascending and comparator(item, next_item):
+			l[i] = next_item
+			l[i+1] = item
+			items_swapped = True
+		elif not ascending and comparator(next_item, item):
 			l[i] = next_item
 			l[i+1] = item
 			items_swapped = True
@@ -147,7 +151,10 @@ def sort(l):
 	if not items_swapped:
 		return l
 	else:
-		return sort(l)
+		return sort_by(l, ascending, comparator)
+
+def sort(l, ascending=True):
+	return sort_by(l, ascending, is_greater_than)
 
 # reverses the given list
 def reverse_list(l):

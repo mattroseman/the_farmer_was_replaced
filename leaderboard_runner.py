@@ -1,1 +1,1 @@
-leaderboard_run(Leaderboards.Pumpkins, 'pumpkin_lb', 1000)
+leaderboard_run(Leaderboards.Sunflowers, 'sunflower_lb', 1000)

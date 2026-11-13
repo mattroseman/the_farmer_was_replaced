@@ -91,16 +91,15 @@ def handle_pumpkin(force=False):
 		
 	water_plot()
 
-def handle_sunflower(force=False, replant=True):
+def handle_sunflower(force=False):
 	if can_harvest():
 		harvest()
 
 	set_tilled()
 
-	if replant:
-		plant(Entities.Sunflower)
+	plant(Entities.Sunflower)
 
-	water_plot()
+	# water_plot()
 
 def handle_cactus(force=False):
 	if can_harvest():
