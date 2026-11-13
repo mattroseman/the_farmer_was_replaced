@@ -1,6 +1,7 @@
 # Divisible Load Partitioner
 
 import utils
+import region_tree
 
 # # partition loads splits the given items list into partitions of diminishing size
 # # this is to better divide labor, where the first partition has more work, and each one after diminishes in size
@@ -125,7 +126,7 @@ def front_loaded_partition(items: list, num_partitions: int):
 	return partitions
 
 # returns a list of lists, that is an even partition of items
-def partition(items: list, num_partitions: int):
+def partition(items: list, num_partitions: int) -> list[list]:
 	len_items = len(items)
 	partition_size = len_items // num_partitions
 	remainder = len_items % num_partitions
@@ -143,3 +144,34 @@ def partition(items: list, num_partitions: int):
 		partitions.append(items[partition_start:partition_end])
 
 	return partitions
+
+# returns a list of partitions of the given region
+# each partition is a dictionary like: 
+# {
+#   zero: (0, 0),
+#   width: 10
+#   height: 10
+# }
+# where the rectangular partitioned regions constitute the given starting region
+# partitions should be roughly equal size, but with likely variations
+def region_partition(region_zero, width, height, num_partitions):
+	partitions_root = region_tree.build_region_tree(region_zero, width, height)
+
+	region_area = region_tree.get_area(partitions_root)
+	if num_partitions > region_area:
+		utils.error("can't partition given area, " + str(region_area) + " into " + str(num_partitions) + " partitions")
+
+	# repeatedly bisect the largest partitions until the goal number of partitions is reached
+	partitions_remaining = num_partitions - 1
+	while partitions_remaining > 0:
+		# get the largest partition
+		largest_partition = region_tree.get_largest_leaf(partitions_root)
+		# split it in half
+		region_tree.split_node_halves(largest_partition)
+		partitions_remaining -= 1
+
+	partition_list = region_tree.flatten(partitions_root)
+
+	return partition_list
+
+

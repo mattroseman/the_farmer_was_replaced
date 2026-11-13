@@ -21,6 +21,11 @@ def shift(position, direction):
 		return (position[0], position[1] - 1)
 	elif direction == West:
 		return (position[0] - 1, position[1])
+
+
+# returns True if a > b
+def is_greater_than(a, b):
+	return a > b
 		
 # direction determines the general direction point b is from a, e.g. a -> b is East
 # favors North/South over East/West, e.g NW becomes N and SE becomes South
@@ -52,6 +57,11 @@ def distance(a, b):
 # distance with no wrap
 def distance_no_wrap(a, b):
 	return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+# returns position's distance from the center (0, 0)
+def distance_from_center(position):
+	return position[0] + position[1]
+
 	
 def inbounds(position):
 	return (

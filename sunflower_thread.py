@@ -8,6 +8,19 @@ import partitioner
 
 WORLD_SIZE = get_world_size()
 
+def initialize_farm_partitions():
+	# one main drone remains and spawns all children
+	num_drones_used = max_drones() - 1
+
+	print(utils.distance_from_center(x, y))
+	max_distance_from_center = utils.distance_from_center(WORLD_SIZE // 2, WORLD_SIZE // 2)
+	partitions = partitioner.(list(range(max_distance_from_center, -1)), num_drones_used)
+	
+
+	num_partitions = WORLD_SIZE*WORLD_SIZE // num_drones_used
+
+
+
 def harvest_sunflower_partition(sunflower_positions):
 	for sunflower_position in sunflower_positions:
 		drone.move_to(sunflower_position[0], sunflower_position[1])
@@ -73,7 +86,15 @@ def plant_column(start_position: tuple[int, int]) -> dict[int, list[tuple[int, i
 			
 	return measurements
 
+def get_plot(position):
+	num_plots = max_drones()
+
+
 def farm(should_stop: function=None):
+	global plots
+
+
+
 	while should_stop == None or not should_stop():
 		drone.move_to(0, 0)
 		(x, y) = (0, 0)
