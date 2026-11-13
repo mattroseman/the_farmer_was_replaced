@@ -74,12 +74,22 @@ def set_hat_off_crop(crop=Entities.Grass):
 	elif crop == Entities.Tree:
 		change_hat(Hats.Tree_Hat)
 		
+		
 # checks if the given array contains an element of the given value
 def array_contains(array, value):
 	for element in array:
 		if element == value:
 			return True
 	return False
+
+# checks if set a and set b share any common elements
+def sets_overlap(a, b):
+	for elem in a:
+		if elem in b:
+			return True
+
+	return False
+
 
 # reverse the given map so keys are values and values are keys
 # may lead to less pairs, as two pairs with the same value will be deduplciated
@@ -203,6 +213,22 @@ def get_timer(time_limit_seconds):
 		return (get_time() - start_time) >= time_limit_seconds
 	
 	return timer
+	
+	
+# returns number of seconds operation took
+def time_operation(operation):
+	start_time = get_time()
+	operation()
+	end_time = get_time()
+	
+	return end_time - start_time
+	
+# converts the total seconds to minutes and seconds
+def seconds_to_minutes_and_seconds(total_seconds):
+	minutes = total_seconds // 60
+	seconds = total_seconds % 60
+	
+	return (minutes, seconds)
 	
 # performance_test_farm takes a given farm function, and tracks
 # how many resources it's able to produce in a set time.

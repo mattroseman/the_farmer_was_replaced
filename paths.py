@@ -7,7 +7,7 @@ WORLD_SIZE = get_world_size()
 # space_zero: bottom-left of area
 # returns: list of positions in the order to visit them
 # 	first position will be closest to drone 
-def build_space_filling_path(space_zero=(0, 0), height=WORLD_SIZE, width=WORLD_SIZE):
+def build_space_filling_path(space_zero=(0, 0), width=WORLD_SIZE, height=WORLD_SIZE):
 	vertical_zig_zags = height > width
 	if vertical_zig_zags:
 		zig_length = height
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 	for (x, y) in tiny_zig_zag:
 		drone.move_to(x, y)
 
-	tall_zig_zag = build_space_filling_path((0, 0), 32, 2)
+	tall_zig_zag = build_space_filling_path((0, 0), 2, 32)
 	print('tall area')
 	for (x, y) in tall_zig_zag:
 		drone.move_to(x, y)
