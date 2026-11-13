@@ -46,8 +46,8 @@ def reset_tracking():
 
 	return edges
 
-# initializes the global edge-tracking variables for the given area
-def initialize_edges(area_zero, width, height) -> None:
+# initializes the global edge-tracking variables for the given region
+def initialize_edges(region_zero, width, height) -> None:
 	global can_track_north_south
 	global edge_north_y
 	global edge_south_y
@@ -56,15 +56,15 @@ def initialize_edges(area_zero, width, height) -> None:
 	global edge_west_x
 
 	can_track_north_south = height + 1 >= PUMPKIN_SIZE
-	edge_north_y = area_zero[1] + PUMPKIN_SIZE - 1
-	edge_south_y = area_zero[1]
+	edge_north_y = region_zero[1] + PUMPKIN_SIZE - 1
+	edge_south_y = region_zero[1]
 
 	can_track_east_west = width + 1 >= PUMPKIN_SIZE
-	edge_east_x = area_zero[0] + PUMPKIN_SIZE - 1
-	edge_west_x = area_zero[0]
+	edge_east_x = region_zero[0] + PUMPKIN_SIZE - 1
+	edge_west_x = region_zero[0]
 
 	if not can_track_north_south and not can_track_east_west:
-		utils.error('drone area too small')
+		utils.error('drone region too small')
 
 def is_grown_pumpkin():
 	return get_entity_type() == Entities.Pumpkin and can_harvest()
@@ -178,14 +178,14 @@ def wait_for_full_pumpkin(should_stop=None):
 			harvest()
 			return
 
-# loops over given area and farms pumpkins, harvesting if pumpkin reaches full size
+# loops over given region and farms pumpkins, harvesting if pumpkin reaches full size
 # args contents:
 #	patch_zero
-# 	area_zero
+# 	region_zero
 # 	width
 # 	height
 # 	should_stop (optional)
-def farm_area(args):
+def farm_region(args):
 	global can_track_north_south
 	global can_track_east_west
 	global edge_north_y
@@ -195,12 +195,12 @@ def farm_area(args):
 	global plots_done
 
 	if len(args) == 4:
-		(patch_zero, area_zero, width, height) = args
+		(patch_zero, region_zero, width, height) = args
 		should_stop = None
 	else:
-		(patch_zero, area_zero, width, height, should_stop) = args
+		(patch_zero, region_zero, width, height, should_stop) = args
 
-	drone_path = paths.build_space_filling_path(area_zero, width, height)
+	drone_path = paths.build_space_filling_path(region_zero, width, height)
 
 	initialize_edges(patch_zero, width, height)
 
@@ -259,19 +259,19 @@ def farm(should_stop=None):
 
 			if not (first_drone and first_patch):
 				min_row = min(drone_rows[drone_i])
-				drone_area_zero = (patch_zero[0], patch_zero[1] + min_row)
-				drone_area_width = PUMPKIN_SIZE
-				drone_area_height = len(drone_rows[drone_i])
+				drone_region_zero = (patch_zero[0], patch_zero[1] + min_row)
+				drone_region_width = PUMPKIN_SIZE
+				drone_region_height = len(drone_rows[drone_i])
 
 				drone_thread.new_thread(
-					farm_area,
+					farm_region,
 					None,  # direction
-					# arguments to farm_area
-					(patch_zero, drone_area_zero, drone_area_width, drone_area_height, should_stop)
+					# arguments to farm_region
+					(patch_zero, drone_region_zero, drone_region_width, drone_region_height, should_stop)
 				)
 
-	drone_area_height = len(drone_rows[0])
-	farm_area(((0, 0), (0, 0), PUMPKIN_SIZE, drone_area_height, should_stop))
+	drone_region_height = len(drone_rows[0])
+	farm_region(((0, 0), (0, 0), PUMPKIN_SIZE, drone_region_height, should_stop))
 
 
 if __name__ == '__main__':

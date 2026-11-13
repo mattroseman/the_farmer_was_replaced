@@ -159,7 +159,7 @@ def region_partition(region_zero, width, height, num_partitions):
 
 	region_area = region_tree.get_area(partitions_root)
 	if num_partitions > region_area:
-		utils.error("can't partition given area, " + str(region_area) + " into " + str(num_partitions) + " partitions")
+		utils.error("can't partition region of area " + str(region_area) + " into " + str(num_partitions) + " partitions")
 
 	# repeatedly bisect the largest partitions until the goal number of partitions is reached
 	partitions_remaining = num_partitions - 1

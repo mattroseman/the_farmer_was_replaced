@@ -4,7 +4,7 @@ WORLD_SIZE = get_world_size()
 
 # build a path that visits every plot in the given rectangular space
 # from space_zero to (space_zero[0] + width, space_zero[1] + height) inclusive
-# space_zero: bottom-left of area
+# space_zero: bottom-left of region
 # returns: list of positions in the order to visit them
 # 	first position will be closest to drone 
 def build_space_filling_path(space_zero=(0, 0), width=WORLD_SIZE, height=WORLD_SIZE):
@@ -80,17 +80,17 @@ if __name__ == '__main__':
 	import drone
 
 	tiny_zig_zag = build_space_filling_path((0, 0), 1, 1)
-	print('tiny area')
+	print('tiny region')
 	for (x, y) in tiny_zig_zag:
 		drone.move_to(x, y)
 
 	tall_zig_zag = build_space_filling_path((0, 0), 2, 32)
-	print('tall area')
+	print('tall region')
 	for (x, y) in tall_zig_zag:
 		drone.move_to(x, y)
 
 	world_zig_zag = build_space_filling_path()
-	print('world area')
+	print('world region')
 	for (x, y) in world_zig_zag:
 		drone.move_to(x, y)
 

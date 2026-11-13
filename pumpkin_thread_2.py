@@ -58,7 +58,7 @@ def farm_patch_rows(args):
 			harvest()
 
 	while should_stop == None or not should_stop():
-		routines.zig_zag_area(
+		routines.zig_zag_region(
 			patch_rows_bottom_left,
 			patch_rows_top_right,
 			plant_and_measure,

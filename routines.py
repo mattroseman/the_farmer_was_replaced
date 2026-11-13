@@ -28,13 +28,13 @@ def zig_zag_farm():
 	for _ in range(WORLD_SIZE):
 		move(West)
 
-# moves the drone in a looping zig zag within the area
+# moves the drone in a looping zig zag within the region
 # encompassed by coordinates bottom_left and top_right (inclusive both)
 # bottom_left[0] <= x <= top_right[0]
 # bottom_left[1] <= y <= top_right[1]
-def zig_zag_area(bottom_left, top_right, operation: function, callback: function=None, row_callback: function=None):
+def zig_zag_region(bottom_left, top_right, operation: function, callback: function=None, row_callback: function=None):
 	num_rows = top_right[1] - bottom_left[1] + 1
-	area_width = top_right[0] - bottom_left[0] + 1
+	region_width = top_right[0] - bottom_left[0] + 1
 	bottom_right = (top_right[0], bottom_left[1])
 	top_left = (bottom_left[0], top_right[1])
 
@@ -59,7 +59,7 @@ def zig_zag_area(bottom_left, top_right, operation: function, callback: function
 		if callback != None:
 			callback(result)
 		results.append(result)
-		for i in range(area_width - 1):
+		for i in range(region_width - 1):
 			move(East)
 			result = operation()
 			if callback != None:
@@ -74,7 +74,7 @@ def zig_zag_area(bottom_left, top_right, operation: function, callback: function
 		if callback != None:
 			callback(result)
 		results.append(result)
-		for i in range(area_width - 1):
+		for i in range(region_width - 1):
 			move(West)
 			result = operation()
 			if callback != None:
@@ -267,4 +267,4 @@ def fill_world_pumpkin():
 	
 if __name__ == '__main__':
 	while True:
-		zig_zag_area((0, 0), (8, 3), till)
+		zig_zag_region((0, 0), (8, 3), till)
