@@ -21,7 +21,7 @@ TILLED_CROPS = [
 
 def water_plot():
 	if num_items(Items.Water) > 1000:
-		if get_water() < 1:
+		if get_water() < .5:
 			use_item(Items.Water)
 	else:
 		if get_water() < 0.25:
@@ -91,15 +91,16 @@ def handle_pumpkin(force=False):
 		
 	water_plot()
 
-def handle_sunflower(force=False):
+def handle_sunflower(water=False):
 	if can_harvest():
 		harvest()
 
 	set_tilled()
 
 	plant(Entities.Sunflower)
-
-	# water_plot()
+	
+	if water:
+		water_plot()
 
 def handle_cactus(force=False):
 	if can_harvest():

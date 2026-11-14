@@ -51,14 +51,20 @@ def initialize_farm_partitions():
 def harvest_sunflowers(sunflower_positions) -> None:
 	for sunflower_position in sunflower_positions:
 		drone.move_to(sunflower_position[0], sunflower_position[1])
+		
+		if not can_harvest():
+			print('inefficient')
+		while not can_harvest() and get_entity_type() == Entities.Sunflower:
+			pass
+		
 		harvest()
 
-def plant_and_measure():
+def plant_and_measure(should_water=False):
 	crops.handle_sunflower()
 	measurement = measure()
 	while measurement > MAX_SUNFLOWER_PETALS:
 		harvest()
-		crops.handle_sunflower(True)
+		crops.handle_sunflower(should_water)
 		measurement = measure()
 	return measurement
 
@@ -77,7 +83,8 @@ def plant_column(start_position: tuple[int, int]) -> dict[int, list[tuple[int, i
 	for y in range(start_position[1], WORLD_SIZE):
 		last_row = y >= (WORLD_SIZE - 1)
 
-		measurement = plant_and_measure()
+		should_water = utils.distance_no_wrap(position, (0, 0)) >= 50 or position[1] > 30
+		measurement = plant_and_measure(should_water)
 		if measurement in measurements:
 			measurements[measurement].append(position)
 		else:
