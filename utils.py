@@ -14,18 +14,24 @@ OPPOSITE_DIRECTION = {
 # if you moved one step in the given direction
 def shift(position, direction):
 	if direction == North:
-		return (position[0], position[1] + 1)
+		return (position[0] % WORLD_SIZE, (position[1] + 1) % WORLD_SIZE)
 	elif direction == East:
-		return (position[0] + 1, position[1])
+		return ((position[0] + 1) % WORLD_SIZE, position[1] % WORLD_SIZE)
 	elif direction == South:
-		return (position[0], position[1] - 1)
+		return (position[0] % WORLD_SIZE, (position[1] - 1) % WORLD_SIZE)
 	elif direction == West:
-		return (position[0] - 1, position[1])
+		return ((position[0] - 1) % WORLD_SIZE, position[1] % WORLD_SIZE)
 
 
 # returns True if a > b
 def is_greater_than(a, b):
 	return a > b
+
+def is_closer_to_origin(a, b):
+	return distance(a, (0, 0)) < distance(b, (0, 0))
+
+def is_farther_from_origin(a, b):
+	return distance(a, (0, 0)) > distance(b, (0, 0))
 		
 # direction determines the general direction point b is from a, e.g. a -> b is East
 # favors North/South over East/West, e.g NW becomes N and SE becomes South
@@ -109,9 +115,9 @@ def reverse_map(map):
 		value = map[key]
 
 		if value in reverse_map:
-			reverse_map[value].append(key)
+			reverse_map[value].add(key)
 		else:
-			reverse_map[value] = [key]
+			reverse_map[value] = { key }
 
 	return reverse_map
 
@@ -155,6 +161,21 @@ def sort_by(l, ascending=True, comparator=is_greater_than):
 
 def sort(l, ascending=True):
 	return sort_by(l, ascending, is_greater_than)
+
+def get_distance_from_zero_comparator(is_closer=True):
+	# returns True if a's farther from (0, 0) than b
+	def is_farther_from_zero(a, b):
+		return distance(a, (0, 0)) > distance(b, (0, 0))
+
+	# returns True if a's closer to (0, 0) than b
+	def is_closer_to_zero(a, b):
+		return distance(a, (0, 0)) < distance(b, (0, 0))
+
+	if is_closer:
+		return is_farther_from_zero
+	else:
+		return is_closer_to_zero
+
 
 # reverses the given list
 def reverse_list(l):
@@ -230,7 +251,31 @@ def get_timer(time_limit_seconds):
 		return (get_time() - start_time) >= time_limit_seconds
 	
 	return timer
-	
+
+# builds a benchmark function which returns the (seconds, ticks) since last called
+def get_benchmarker():
+	start_time = [None]
+	start_tick = [None]
+
+	def benchmark():
+		end_time = get_time()
+		end_tick = get_tick_count()
+
+		num_seconds = None
+		num_ticks = None
+		# if not the first run
+		if start_time[0] != None and start_tick != None: 
+			num_seconds = end_time - start_time[0]
+			num_ticks = end_tick - start_tick[0]
+
+		# reset start values to end values
+		start_time[0] = end_time
+		start_tick[0] = end_tick
+
+		return (num_seconds, num_ticks)
+
+	return benchmark
+
 	
 # returns number of seconds operation took
 def time_operation(operation):

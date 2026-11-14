@@ -48,10 +48,26 @@ def new_thread(operation, direction=None, args=()):
 def wait_for_children(children):
 	results = []
 	for thread in children:
+		# reused drones may set the previous drone to None
+		if thread == None:
+			continue
+
 		result = wait_for(thread)
 		results.append(result)
 		
 	return results
+
+def have_all_children_returned(children):
+	for child in children:
+		if not has_finished(child):
+			return False
+	return True 
+
+def have_children_returned(children):
+	for child in children:
+		if has_finished(child):
+			return True
+	return False
 
 
 if __name__ == '__main__':

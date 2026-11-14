@@ -90,6 +90,24 @@ def spawner_drone_end_same_time(position):
 	for child in children:
 		wait_for(child)
 
+def drone_respawner(position):
+	children = set()
+	for _ in range(0, WORLD_SIZE-1):
+		child = spawn_drone(plant_column)
+		children.add(child)
+		move(East)
+
+	if max_drones() - num_drones() > 0:
+		child = spawn_drone(plant_column)
+		children.add(child)
+		move(East)
+	else:
+		plant_column()
+	
+	for child in children:
+		wait_for(child)
+
+
 if __name__ == '__main__':
 	clear()
 	
@@ -108,7 +126,9 @@ if __name__ == '__main__':
 	# spawner_drone_plant_world()
 
 	# world planted in  4.8 seconds, 29177 ticks
-	spawner_drone_end_same_time(position)
+	# spawner_drone_end_same_time(position)
+
+	drone_respawner(position)
 	
 	end_time = get_time()
 	end_tick = get_tick_count()

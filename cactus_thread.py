@@ -1,5 +1,3 @@
-set_world_size(10)
-
 import crops
 import routines
 import utils
@@ -27,7 +25,7 @@ def farm():
 
 	# send out a drone to sort each row
 	for row in range(WORLD_SIZE):
-		drone_thread.new_thread(sort_row, )
+		drone_thread.new_thread(sort_row, East)
 	# TODO send out a drone to sort each column
 	# TODO harvest
 

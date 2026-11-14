@@ -139,13 +139,10 @@ def for_each_plot(operation: function, should_stop: function=None) -> dict[tuple
 # spawns drones to traverse the world and perform operation on each plot
 # operation(position) is expected to take one arg, the position the drone is on
 # should_stop(result) is expected to take one arg, the result of the operation, and return True if the drone should stop
-# return {(0, 0): measurement, (0, 1): measurement,...} is dict of positions visited and measurements taken
-def for_each_plot_threaded(
-		operation: function,
-		should_stop: function = None,
-	) -> any | None:
+# returns set of tuples (position, result) indicating each position the result of operation was taken
+def for_each_plot_threaded(operation, should_stop):
 	drone.move_to(0, 0)
-	(x, y) = (0, 0)
+	position = (0, 0)
 	
 	def traverse_column(start_position):
 		position = start_position
@@ -210,7 +207,6 @@ def for_each_column_threaded(operation: function, should_stop: function=None):
 
 	operation(should_stop)
 
-
 def till_world():
 	def set_tilled_wrapper(position):
 		crops.set_tilled()
@@ -219,6 +215,62 @@ def untill_world():
 	def set_untilled_wrapper(position):
 		crops.set_untilled
 	for_each_plot_threaded(set_untilled_wrapper)
+
+# start_bend_y: the row where the first column will start it's bend Westward, followed by the rest
+# returns a set of (position, result) tuples
+def plant_l_shape(crop: Entities, plant_crop: function, start_position, start_bend_y=WORLD_SIZE // 2):
+	position = start_position
+	results = set()
+
+	result = plant_crop()
+	results.add((position, result))
+	# the farther East (+x) you are, the higher you go before turning West
+	for _ in range(min(start_bend_y + start_position[0], WORLD_SIZE - 1)):
+		move(North)
+		position = utils.shift(position, North)
+		if get_entity_type() != crop:
+			result = plant_crop()
+			results.add((position, result))
+
+		# lookahead for already planted Sunflower
+		# if get_entity_type(North) == Entities.Sunflower:
+		# 	return
+
+	# bend westward
+	for _ in range(start_bend_y + start_position[0], 2*(WORLD_SIZE - 1)):
+		move(West)
+		position = utils.shift(position, West)
+		if get_entity_type() != crop:
+			result = plant_crop()
+			results.add((position, result))
+
+		# lookahead for already planted Sunflower
+		if get_entity_type(West) == crop:
+			return results
+
+	return results
+
+# optimized full-world planting
+# returns a set of (position, result) tuples, one for each plot planted, where result is what plant_crop() returned
+def fast_plant(crop: Entities, plant_crop: function, start_bend_y=WORLD_SIZE*0.80 // 1) -> set[tuple]:
+	position = (get_pos_x(), get_pos_y())
+	children = set()
+
+	for _ in range(WORLD_SIZE - 1):
+		child = spawn_drone(plant_l_shape, crop, plant_crop, position, start_bend_y)
+		children.add(child)
+		move(East)
+		position = utils.shift(position, East)
+
+	results = plant_l_shape(crop, plant_crop, position, start_bend_y)
+
+	for child in children:
+		child_results = wait_for(child)
+		for child_result in child_results:
+			results.add(child_result)
+
+	return results
+	
 
 # randomly move about and perform given operation at each plot
 def perambulate(operation, should_stop=None):

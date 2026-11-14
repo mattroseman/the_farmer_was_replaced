@@ -10,13 +10,4 @@
 #   try fertilizer on pumpkin farm (does it prevent dead pumpkins?)
 #   weird substance farm?
 
-set_world_size(6)
 
-import drone
-import routines
-
-routines.till_world()
-
-
-
-drone.wait_around()
