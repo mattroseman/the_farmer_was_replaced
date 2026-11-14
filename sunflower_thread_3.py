@@ -42,9 +42,9 @@ def initialize_farm_partitions():
 		a_dist = utils.distance(a_center, (0, 0))
 		b_dist = utils.distance(b_center, (0, 0))
 
-		# favor the farther-away partition, i.e. sort it earlier
-		return a_dist > b_dist
-	utils.sort_by(partitions, False, partition_comparer)
+		# favor the farther-away partition, i.e. closer partitions sort later
+		return a_dist < b_dist
+	utils.sort_by(partitions, partition_comparer)
 
 	position_to_partition = {}
 	for partition_i in range(num_partitions):
@@ -56,9 +56,9 @@ def initialize_farm_partitions():
 def harvest_sunflowers(sunflower_positions, reverse_order=False) -> None:
 	# sort so closer to origin sunflowers are first
 	if not reverse_order:
-		utils.sort_by(sunflower_positions, False, utils.is_closer_to_origin)
+		utils.sort_by(sunflower_positions, utils.is_farther_from_origin)
 	else:
-		utils.sort_by(sunflower_positions, False, utils.is_farther_from_origin)
+		utils.sort_by(sunflower_positions, utils.is_closer_to_origin)
 
 	for sunflower_position in sunflower_positions:
 		drone.move_to(sunflower_position[0], sunflower_position[1])

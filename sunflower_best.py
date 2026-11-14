@@ -37,9 +37,9 @@ def initialize_farm_partitions():
 		a_dist = utils.distance(a_center, (0, 0))
 		b_dist = utils.distance(b_center, (0, 0))
 
-		# favor the farther-away partition, i.e. sort it earlier
-		return a_dist > b_dist
-	utils.sort_by(partitions, False, partition_comparer)
+		# favor the farther-away partition, i.e. closer partitions sort later
+		return a_dist < b_dist
+	utils.sort_by(partitions, partition_comparer)
 
 	position_to_partition = {}
 	for partition_i in range(num_partitions):

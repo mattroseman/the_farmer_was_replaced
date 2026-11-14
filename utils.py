@@ -138,18 +138,17 @@ def get_dict_keys_sorted_by_values(d):
 
 	return sorted_keys
 
-def sort_by(l, ascending=True, comparator=is_greater_than):
+# sorts l in place, ascending
+# comparator(a, b) returns True if a belongs after b (i.e. a > b)
+# comparator must be strict (False for equal items), or this never terminates
+def sort_by(l, comparator=is_greater_than):
 	items_swapped = False
 
 	for i in range(len(l) - 1):
 		item = l[i]
 		next_item = l[i+1]
 
-		if ascending and comparator(item, next_item):
-			l[i] = next_item
-			l[i+1] = item
-			items_swapped = True
-		elif not ascending and comparator(next_item, item):
+		if comparator(item, next_item):
 			l[i] = next_item
 			l[i+1] = item
 			items_swapped = True
@@ -157,10 +156,10 @@ def sort_by(l, ascending=True, comparator=is_greater_than):
 	if not items_swapped:
 		return l
 	else:
-		return sort_by(l, ascending, comparator)
+		return sort_by(l, comparator)
 
-def sort(l, ascending=True):
-	return sort_by(l, ascending, is_greater_than)
+def sort(l):
+	return sort_by(l, is_greater_than)
 
 def get_distance_from_zero_comparator(is_closer=True):
 	# returns True if a's farther from (0, 0) than b
