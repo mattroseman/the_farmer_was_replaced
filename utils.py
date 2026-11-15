@@ -234,6 +234,14 @@ def get_inventory():
 		Items.Bone: num_items(Items.Bone)
 	}
 
+# return a dict of time, tick, and inventory, which is a sub dict of what get_inventory returns
+def get_state():
+	return {
+		'time': get_time(),
+		'tick': get_tick_count(),
+		'inventory': get_inventory()
+	}
+
 # get_timer creates a timer function which starts a timer when called
 # The returned timer function returns False while the timer is active, and True when the time limit has been reached
 def get_timer(time_limit_seconds):
@@ -251,29 +259,42 @@ def get_timer(time_limit_seconds):
 	
 	return timer
 
-# builds a benchmark function which returns the (seconds, ticks) since last called
-def get_benchmarker():
-	start_time = [None]
-	start_tick = [None]
+# stores the current time, tick, and inventory, and returns a checkpoint function
+# every call to checkpoint will give you the diff of your current state to the checkpoints
+# {
+#   'since_checkpoint': (num_seconds, num_ticks, item_diff)
+#	'since_last_check': (num_seconds, num_ticks, item_diff)
+# }
+def set_checkpoint():
+	start_state = get_state()
+	last_check_state = get_state()
 
-	def benchmark():
-		end_time = get_time()
-		end_tick = get_tick_count()
+	def checkpoint():
+		state = get_state()
 
-		num_seconds = None
-		num_ticks = None
-		# if not the first run
-		if start_time[0] != None and start_tick != None: 
-			num_seconds = end_time - start_time[0]
-			num_ticks = end_tick - start_tick[0]
+		seconds = state['time'] - start_state['time']
+		ticks = state['tick'] - start_state['tick']
+		item_diff = {}
+		for item in state['inventory']:
+			item_diff[item] = state['inventory'][item] - start_state['inventory'][item]
 
-		# reset start values to end values
-		start_time[0] = end_time
-		start_tick[0] = end_tick
+		last_check_seconds = state['time'] - last_check_state['time']
+		last_check_ticks = state['tick'] - last_check_state['tick']
+		last_check_item_diff = {}
+		for item in state['inventory']:
+			last_check_item_diff[item] = state['inventory'][item] - last_check_state['inventory'][item]
 
-		return (num_seconds, num_ticks)
+		# reset last check state to match current state
+		last_check_state['time'] = state['time']
+		last_check_state['tick'] = state['tick']
+		last_check_state['inventory'] = state['inventory']
 
-	return benchmark
+		return {
+			'since_checkpoint': (seconds, ticks, item_diff),
+			'since_last_check': (last_check_seconds, last_check_ticks, last_check_item_diff)
+		}
+
+	return checkpoint
 
 	
 # returns number of seconds operation took

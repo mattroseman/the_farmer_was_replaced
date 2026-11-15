@@ -11,7 +11,7 @@ import partitioner
 
 WORLD_SIZE = get_world_size()
 
-benchmark = utils.get_benchmarker()
+WATER_CROP = True
 
 # =================== PLANTING SUNFLOWERS ===================
 
@@ -41,23 +41,31 @@ def plant_field():
 def plant_column(position):
 	results = set()
 
-	petals = plant_sunflower()
+	petals = plant_sunflower(position)
 	results.add((position, petals))
 	for _ in range(WORLD_SIZE - 1):
 		move(North)
 		position = utils.shift(position, North)
 
-		petals = plant_sunflower()
+		petals = plant_sunflower(position)
 		results.add((position, petals))
 
 	return results
 
-def plant_sunflower():
+def plant_sunflower(position):
 	if get_ground_type() != Grounds.Soil:
 		till()
 
+	if should_water(position) and get_water() < 0.5:
+		use_item(Items.Water)
+
 	plant(Entities.Sunflower)
 	return measure()
+
+def should_water(position):
+	# return position[1] > 27 or position[0] > 30
+	# return utils.distance(position, (0, 0)) > 10
+	return WATER_CROP
 
 # =================== ROLLING-UP PETAL COUNTS ===================
 
@@ -117,39 +125,58 @@ def harvest_sunflower():
 	if get_entity_type() != Entities.Sunflower:
 		return
 
+	if not can_harvest():
+		(x, y) = (get_pos_x(), get_pos_y())
+		quick_print('inefficient @', (x, y), ', ', utils.distance((x, y), (0, 0)))
 	while not can_harvest():
 		pass
 
 	harvest()
 
 def farm(should_stop=None):
-	# planting sunflowers took: 5.43 seconds, 33017 ticks
+	checkpoint = utils.set_checkpoint()
+
+	# PLANTING
 	quick_print('planting sunflowers')
-	benchmark()
+	checkpoint()
+
 	positions_and_petals = plant_field()
-	(seconds, ticks) = benchmark()
+
+	(seconds, ticks, _) = checkpoint()['since_last_check']
 	drone.move_to(0, 0)
-	print('planting sunflowers:', seconds, 'seconds,', ticks, 'ticks')
-	do_a_flip()
+	quick_print('plant sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+	# do_a_flip()
 
-	# aggregating planting data took: 0.23 seconds, 1370 ticks
 	quick_print('aggregating petal counts')
-	benchmark()
-	petal_positions = aggregate_by_petals(positions_and_petals)
-	(seconds, ticks) = benchmark()
-	print('aggregating planting data:', seconds, 'seconds,', ticks, 'ticks')
+	checkpoint()
 
+	petal_positions = aggregate_by_petals(positions_and_petals)
+
+	(seconds, ticks, _) = checkpoint()['since_last_check']
+	quick_print('aggregate planting data:', seconds, 'seconds,', ticks, 'ticks')
+
+	# HARVESTING 
 	quick_print('harvesting sunflowers')
-	benchmark()
+	checkpoint()
+
 	for petal_count in range(15, 6, -1):
 		if petal_count not in petal_positions:
 			continue
 
 		sunflower_positions = petal_positions[petal_count]
 		harvest_sunflowers(sunflower_positions)
-	(seconds, ticks) = benchmark()
-	print('harvesting sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+
+
+	(seconds, ticks, _) = checkpoint()['since_last_check']
+	quick_print('harvest sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+
+	(seconds, _, item_diff) = checkpoint()['since_checkpoint']
+	quick_print('total time:', seconds, 'seconds')
+	rate = item_diff[Items.Power] / seconds
+	quick_print('total rate:', rate, 'power/s')
 
 if __name__ == '__main__':
 	clear()
-	farm()
+	quick_print('---')
+	while True:
+		farm()
