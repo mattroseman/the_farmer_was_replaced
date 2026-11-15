@@ -147,6 +147,21 @@ def partition(items: list, num_partitions: int) -> list[list]:
 
 	return partitions
 
+# gives a list of (start, end) indecies, evenly partitioning l into num_partitions
+def partition_indecies(l, num_partitions):
+	length = len(l)
+
+	if num_partitions <= 1:
+		return [(0, length)]
+
+	indecies = []
+	for i in range(num_partitions):
+		start_index = (i * length) // num_partitions
+		end_index = ((i + 1) * length) // num_partitions
+		indecies.append((start_index, end_index))
+
+	return indecies
+
 # returns a list of partitions of the given region
 # each partition is a dictionary like: 
 # {

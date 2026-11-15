@@ -42,6 +42,16 @@
 # total time: 28.45 seconds
 # total rate: 271.63 power/s
 
+# w/ above & limited range of petal-counts planted
+# planting sunflowers
+# plant sunflowers: 5.56 seconds, 33790 ticks
+# aggregating petal counts
+# aggregate planting data: 2.55 seconds, 15473 ticks
+# harvesting sunflowers
+# harvest sunflowers: 14.1 seconds, 85645 ticks
+# total time: 22.9 seconds
+# total rate: 337.49 power/s
+
 import utils
 import drone
 import partitioner
@@ -49,7 +59,10 @@ import partitioner
 WORLD_SIZE = get_world_size()
 
 WATER_CROP = True
-WAIT_FOR_FULLY_GROWN = True 
+WAIT_FOR_FULLY_GROWN = True
+# limit range of measurements during planting
+# sunflowers have 7-15 petals
+MIN_SUNFLOWER_MEASUREMENT = 10
 
 partitions = []
 # mapping of position to the index of the corresponding partition in partitions
@@ -167,10 +180,18 @@ def plant_sunflower(position):
 		use_item(Items.Water)
 
 	plant(Entities.Sunflower)
+	measurement = measure()
+	while measurement < MIN_SUNFLOWER_MEASUREMENT:
+		harvest()
+		plant(Entities.Sunflower)
+		measurement = measure()
+
 	return measure()
 
 def should_water(position):
-	# return position[1] > 27 or position[0] > 30
+	water_left = num_items(Items.Water)
+	if water_left < 100:
+		return position[1] > 25
 	# return utils.distance(position, (0, 0)) > 10
 	return WATER_CROP
 
@@ -255,6 +276,10 @@ def harvest_sunflower():
 			quick_print('inefficient @', (x, y), ', ', utils.distance((x, y), (0, 0)))
 		while not can_harvest():
 			pass
+	else:
+		if not can_harvest():
+			(x, y) = (get_pos_x(), get_pos_y())
+			quick_print('missed harvest @', (x, y), ', ', utils.distance((x, y), (0, 0)))
 
 	harvest()
 
@@ -263,45 +288,53 @@ def farm(should_stop=None):
 
 	initialize_farm_partitions()
 
-	# PLANTING
-	quick_print('planting sunflowers')
-	checkpoint()
+	while should_stop == None or not should_stop():
+		# PLANTING
+		quick_print('planting sunflowers')
+		checkpoint()
 
-	positions_and_petals = plant_field()
+		positions_and_petals = plant_field()
 
-	(seconds, ticks, _) = checkpoint()['since_last_check']
-	drone.move_to(0, 0)
-	quick_print('plant sunflowers:', seconds, 'seconds,', ticks, 'ticks')
-	# do_a_flip()
+		if should_stop != None and should_stop():
+			return
 
-	quick_print('aggregating petal counts')
-	checkpoint()
+		(seconds, ticks, _) = checkpoint()['since_last_check']
+		drone.move_to(0, 0)
+		quick_print('plant sunflowers:', seconds, 'seconds,', ticks, 'ticks')
 
-	petal_partitions = aggregate_by_petals(positions_and_petals)
+		quick_print('aggregating petal counts')
+		checkpoint()
 
-	(seconds, ticks, _) = checkpoint()['since_last_check']
-	quick_print('aggregate planting data:', seconds, 'seconds,', ticks, 'ticks')
+		petal_partitions = aggregate_by_petals(positions_and_petals, max_drones() - 1)
 
-	# HARVESTING 
-	quick_print('harvesting sunflowers')
-	checkpoint()
+		(seconds, ticks, _) = checkpoint()['since_last_check']
+		quick_print('aggregate planting data:', seconds, 'seconds,', ticks, 'ticks')
 
-	for petal_count in range(15, 6, -1):
-		if petal_count not in petal_partitions:
-			continue
+		if should_stop != None and should_stop():
+			return
 
-		harvest_sunflowers(petal_partitions[petal_count])
+		# HARVESTING 
+		quick_print('harvesting sunflowers')
+		checkpoint()
 
-	(seconds, ticks, _) = checkpoint()['since_last_check']
-	quick_print('harvest sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+		for petal_count in range(15, 6, -1):
+			if petal_count not in petal_partitions:
+				continue
 
-	(seconds, _, item_diff) = checkpoint()['since_checkpoint']
-	quick_print('total time:', seconds, 'seconds')
-	rate = item_diff[Items.Power] / seconds
-	quick_print('total rate:', rate, 'power/s')
+			if should_stop != None and should_stop():
+				return
+
+			harvest_sunflowers(petal_partitions[petal_count])
+
+		(seconds, ticks, _) = checkpoint()['since_last_check']
+		quick_print('harvest sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+
+		(seconds, _, item_diff) = checkpoint()['since_checkpoint']
+		quick_print('total time:', seconds, 'seconds')
+		rate = item_diff[Items.Power] / seconds
+		quick_print('total rate:', rate, 'power/s')
 
 if __name__ == '__main__':
 	clear()
 	quick_print('---')
-	while True:
-		farm()
+	farm()
