@@ -57,6 +57,22 @@ def wait_for_children(children):
 		
 	return results
 
+# waits for all children to finish, but passes results to callback as they finish
+# callback(child, child_results) takes the child thread, and that thread's results
+def wait_for_children_async(children, callback) -> None:
+	done_children = set()
+
+	while len(done_children) < len(children):
+		for child in children:
+			if child in done_children or not has_finished(child):
+				continue
+
+			done_children.add(child)
+
+			result = wait_for(child)
+			callback(child, result)
+
+
 def have_all_children_returned(children):
 	for child in children:
 		if not has_finished(child):
