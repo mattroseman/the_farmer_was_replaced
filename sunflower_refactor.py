@@ -42,6 +42,24 @@
 # total time: 28.45 seconds
 # total rate: 271.63 power/s
 
+# w/ planting drones aggregating & sorting data w/out tree-like spawning
+# planting sunflowers
+# plant & aggregate sunflowers: 11.67 seconds, 70876 ticks
+# harvesting sunflowers
+# harvest sunflowers: 19.35 seconds, 117534 ticks
+# total time: 31.08 seconds
+# total rate: 245.99 power/s
+
+# w/ planting drones aggregating & sorting data w/ tree-like spawning
+# planting sunflowers
+# plant & aggregate sunflowers: 7.17 seconds, 43548 ticks
+# harvesting sunflowers
+# harvest sunflowers: 19.1 seconds, 116062 ticks
+# total time: 26.34 seconds
+# total rate: 293.45 power/s
+
+# w/ tree-like planting aggregating but harvest drones sorting
+
 import utils
 import drone
 import partitioner
@@ -97,30 +115,66 @@ def initialize_farm_partitions():
 # =================== PLANTING SUNFLOWERS ===================
 
 def plant_field():
-	position = (get_pos_x(), get_pos_y())
-	children = set()
+	drone.move_to(0, 0)
 
-	east_stop = WORLD_SIZE // 2
-	# west stop is always one right of east stop
-	west_stop = (east_stop + 1) % WORLD_SIZE
+	# create drones east and west to spawn further drones to farm east_columns and west_columns
+	# don't include column 0 in either east or west, as it'll be handled by self
+	east_columns = list(range(1, WORLD_SIZE // 2))
+	west_columns = list(range(WORLD_SIZE // 2, WORLD_SIZE))
+	east_child = spawn_drone(spawn_drones_to_plant_column_range, East, east_columns)
+	west_child = spawn_drone(spawn_drones_to_plant_column_range, West, west_columns)
 
-	east_child = spawn_drone(move_spawn_then_plant, position, East, east_stop)
-	west_child = spawn_drone(move_spawn_then_plant, position, West, west_stop)
-
-	results = plant_column(position)
-
+	# you plant the 0th column yourself
+	your_results = plant_column((0, 0))
+	# and combine with east and west children
 	east_results = wait_for(east_child)
 	west_results = wait_for(west_child)
 
 	merge_results(east_results, west_results)
-	merge_results(results, east_results)
+	merge_results(east_results, your_results)
+	return east_results 
 
-	# west_spawner_child = spawn_drone(spawn_column_drones, West, position, west_stop)
-	# results = spawn_column_drones(East, position, east_stop)
-	# west_spawner_results = wait_for(west_spawner_child)
-	# merge_results(results, west_spawner_results)
+# spawns drones to plant the plots in the given list of columns, moving in the given direction
+# direction: direction drone is moving, to avoid wasted movements
+# columns: sorted (west to east) list of columns for this drone to process
+def spawn_drones_to_plant_column_range(direction, columns):
+	if direction == East:
+		drone.move_to(columns[0], 0)
+	elif direction == West:
+		drone.move_to(columns[-1], 0)
+	else:
+		utils.error('spawn_drones_to_plant_column_range can only move East or West, not', direction)
 
-	return results
+	# BASE CASE
+	num_columns = len(columns)
+	if num_columns == 1:
+		results = plant_column((columns[0], 0))
+		return results
+
+	available_drones = max_drones() - num_drones()
+	if num_columns - 1 > available_drones:
+		utils.error('not enough drones')
+
+	# split columns
+	first_half_columns = columns[:num_columns // 2]
+	second_half_columns = columns[num_columns // 2:]
+	if direction == East:
+		child_columns = second_half_columns
+		your_columns = first_half_columns
+	else:
+		child_columns = first_half_columns
+		your_columns = second_half_columns
+
+	child = spawn_drone(spawn_drones_to_plant_column_range, direction, child_columns)
+	if child == None:
+		utils.error('failed to spawn drone')
+
+	your_results = spawn_drones_to_plant_column_range(direction, your_columns)
+	child_results = wait_for(child)
+
+	# merge your results into child_results
+	merge_results(child_results, your_results)
+	return child_results
 
 # moves drone from position to given direction
 # if not on stop_x, spawns a replica in the same direction

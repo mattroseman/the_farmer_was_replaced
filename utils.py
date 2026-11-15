@@ -166,26 +166,31 @@ def merge_sorted_lists(a, b, comparator):
 	len_b = len(b)
 	a_i = 0
 	b_i = 0
-	m = []
+	# m = []
 
 	# move dual indecies forward, smallest at a time
 	while a_i != len_a and b_i != len_b:
+		# if a_i is greater so should come later
 		if comparator(a[a_i], b[b_i]):
-			m.append(b[b_i])
+			# m.append(b[b_i])
+			a.insert(a_i, b[b_i])
+			len_a += 1
+			a_i += 1
 			b_i += 1
 		else:
-			m.append(a[a_i])
+			# m.append(a[a_i])
 			a_i += 1
 
 	# append on the rest of the remaining list
-	if a_i != len_a:
-		for a_i in range(a_i, len_a):
-			m.append(a[a_i])
+	# if a_i != len_a:
+	# 	for a_i in range(a_i, len_a):
+	# 		m.append(a[a_i])
 	if b_i != len_b:
 		for b_i in range(b_i, len_b):
-			m.append(b[b_i])
+			a.append(b[b_i])
+		# 	m.append(b[b_i])
 
-	return m
+	return a
 
 def insert_sorted(l, elem, comparator):
 	for i in range(len(l)):
