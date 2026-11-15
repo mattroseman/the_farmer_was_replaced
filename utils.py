@@ -187,6 +187,17 @@ def merge_sorted_lists(a, b, comparator):
 
 	return m
 
+def insert_sorted(l, elem, comparator):
+	for i in range(len(l)):
+		# if l[i] is greater, meaning is should be later in the list
+		if comparator(l[i], elem):
+			# insert elem before index i
+			l.insert(i, elem)
+
+			return
+	# if code reaches here, elem is larger than everything in the list 
+	# so append it
+	l.append(elem)
 
 def get_distance_from_zero_comparator(is_closer=True):
 	# returns True if a's farther from (0, 0) than b

@@ -158,7 +158,7 @@ def partition(items: list, num_partitions: int) -> list[list]:
 # partitions should be roughly equal size, but with likely variations
 # partition_comparator(a, b): comparison function of partitions a & b, returns True if a > b.
 # 	if not None partitions are sorted ascending order
-def partition_region(region_zero, width, height, num_partitions, partition_comparator=None):
+def partition_region(region_zero, width, height, num_partitions, partition_comparator=None, available_drones=0):
 	partitions_root = region_tree.build_region_tree(region_zero, width, height)
 
 	# BASE CASE
@@ -172,8 +172,13 @@ def partition_region(region_zero, width, height, num_partitions, partition_compa
 	# bisect region and recursively partition each half
 	split_vertically = height >= width
 
+	A_child = None
+	# only A child is spawned, B is recursively thrown back into the function
+	# B_child = None
 	A_num_partitions = num_partitions // 2
 	B_num_partitions = num_partitions - A_num_partitions
+	A_num_drones = available_drones // 2
+	B_num_drones = available_drones - A_num_drones
 	if split_vertically:
 		B_zero = region_zero
 		# make the cut proportional to the percent of partitions B gets
@@ -193,8 +198,18 @@ def partition_region(region_zero, width, height, num_partitions, partition_compa
 		B_height = height
 		B_width = width - A_width
 
-	A_partitioned = partition_region(A_zero, A_width, A_height, A_num_partitions, partition_comparator)
-	B_partitioned = partition_region(B_zero, B_width, B_height, B_num_partitions, partition_comparator)
+	# spawn a drone to handle one half, and recursively handle the other yourself
+	if A_num_drones >= 1:
+		A_num_drones -= 1 
+		A_child = spawn_drone(partition_region, A_zero, A_width, A_height, A_num_partitions, partition_comparator, A_num_drones)
+
+	B_partitioned = partition_region(B_zero, B_width, B_height, B_num_partitions, partition_comparator, B_num_drones)
+
+	# if no child, do the work yourself
+	if A_child == None:
+		A_partitioned = partition_region(A_zero, A_width, A_height, A_num_partitions, partition_comparator, A_num_drones)
+	else:
+		A_partitioned = wait_for(A_child)
 
 	if partition_comparator != None:
 		merged = utils.merge_sorted_lists(A_partitioned, B_partitioned, partition_comparator)

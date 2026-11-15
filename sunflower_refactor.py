@@ -32,6 +32,16 @@
 # total time: 28.45 seconds
 # total rate: 271.63 power/s
 
+# w/ partitioned world and sorted positions and w/ water
+# planting sunflowers
+# plant sunflowers: 4.75 seconds, 28858 ticks
+# aggregating petal counts
+# aggregate planting data: 1.71 seconds, 10385 ticks
+# harvesting sunflowers
+# harvest sunflowers: 21.29 seconds, 129361 ticks
+# total time: 28.45 seconds
+# total rate: 271.63 power/s
+
 import utils
 import drone
 import partitioner
@@ -73,7 +83,8 @@ def initialize_farm_partitions():
 		WORLD_SIZE,       # region width
 		WORLD_SIZE,       # region height
 		num_partitions,
-		is_closer_to_origin
+		is_closer_to_origin,
+		max_drones() - 1  # make available all drones but this one
 	)
 
 	position_to_partition = {}
@@ -167,21 +178,49 @@ def should_water(position):
 
 # rollup the set of positions for each unique petal count
 # positions_and_petals: is an iterable of tuples (position, num_petals)
-def aggregate_by_petals(positions_and_petals):
+# returns: dictionary mapping petal counts to partitions to positions in those partitions
+def aggregate_by_petals(positions_and_petals, available_drones=0):
 	# petals -> partition -> position
 	petal_partitions = {}
 
-	for value in positions_and_petals:
-		(position, petals) = value
-		partition = position_to_partition[position]
+	# each thread aggregates positions found for each petal count, in one particular partition
+	def aggregate_positions_per_petal_count(partition, positions_and_petals):
+		positions_per_petal = {}
 
-		if petals in petal_partitions:
-			if partition in petal_partitions[petals]:
-				petal_partitions[petals][partition].append(position)
+		# for any positions which are in this partition
+		for (position, petals) in positions_and_petals:
+			# if this positiosn is outside the partition, skip
+			if position_to_partition[position] != partition:
+				continue
+
+			if petals in positions_per_petal:
+				# insert this position in sorted order
+				utils.insert_sorted(positions_per_petal[petals], position, utils.is_farther_from_origin)
 			else:
-				petal_partitions[petals][partition] =  [ position ]
-		else:
-			petal_partitions[petals] = {partition: [ position ]}
+				positions_per_petal[petals] = [ position ]
+
+		return positions_per_petal
+
+	children = {}
+	for partition_i in range(len(partitions)):
+		child = spawn_drone(aggregate_positions_per_petal_count, partition_i, positions_and_petals)
+		children[partition_i] = child
+
+	# merge each child's data for their partition into the larger mapping
+	# petals -> position for a specific partition, becomes
+	# petals -> that partition -> those positions
+	for partition_i in children:
+		child = children[partition_i]
+
+		# child returns dict of positions under each petals count,
+		# all for the child's partition
+		positions_per_petal = wait_for(child)
+
+		for petals in positions_per_petal:
+			if petals in petal_partitions:
+				petal_partitions[petals][partition_i] = positions_per_petal[petals]  
+			else:
+				petal_partitions[petals] = { partition_i: positions_per_petal[petals] }
 
 	return petal_partitions
 
