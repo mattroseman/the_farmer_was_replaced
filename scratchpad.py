@@ -11,3 +11,7 @@
 #   weird substance farm?
 
 
+import drone
+
+set_world_size(6)
+drone.wait_around()
