@@ -1,17 +1,34 @@
+# w/out fast dual-spawner planting and w/ water
 # planting sunflowers
-# planting sunflowers: 5.81 seconds, 35277 ticks
+# plant sunflowers: 6.93 seconds, 42082 ticks
 # aggregating petal counts
-# aggregating planting data: 0.68 seconds, 4111 ticks
+# aggregate planting data: 0.7 seconds, 4259 ticks
 # harvesting sunflowers
-# harvesting sunflowers: 26.71 seconds, 162264 ticks
+# inefficient @ (22,31) ,  11
+# inefficient @ (28,29) ,  7
+# inefficient @ (31,31) ,  2
+# inefficient @ (28,31) ,  5
+# harvest sunflowers: 25.01 seconds, 151921 ticks
+# total time: 32.8 seconds
+# total rate: 231.19 power/s
+
+# w/ fast dual-spawner planting and w/ water
+# planting sunflowers
+# plant sunflowers: 4.85 seconds, 29458 ticks
+# aggregating petal counts
+# aggregate planting data: 0.7 seconds, 4259 ticks
+# harvesting sunflowers
+# harvest sunflowers: 27.21 seconds, 165329 ticks
+# total time: 33.46 seconds
+# total rate: 227.53 power/s 
 
 import utils
 import drone
-import partitioner
 
 WORLD_SIZE = get_world_size()
 
 WATER_CROP = True
+WAIT_FOR_FULLY_GROWN = True 
 
 # =================== PLANTING SUNFLOWERS ===================
 
@@ -20,21 +37,47 @@ def plant_field():
 	children = set()
 	results = set()
 
-	for _ in range(WORLD_SIZE - 1):
+	east_stop = WORLD_SIZE // 2
+	# west stop is always one right of east stop
+	west_stop = (east_stop + 1) % WORLD_SIZE
+
+	west_spawner_child = spawn_drone(spawn_column_drones, West, position, west_stop)
+
+	move(East)
+	position = utils.shift(position, East)
+	parent_results = spawn_column_drones(East, position, east_stop)
+	for result in parent_results:
+		results.add(result)
+
+	west_spawner_results = wait_for(west_spawner_child)
+	for result in west_spawner_results:
+		results.add(result)
+
+	return results
+
+# moves along the current row, spawning a column drone for each column visited
+# drone ends on stop_x, and then works that column itself
+def spawn_column_drones(direction, position, stop_x):
+	children = set()
+	results = set()
+
+	while position[0] != stop_x:
 		child = spawn_drone(plant_column, position)
 		children.add(child)
 
-		move(East)
-		position = utils.shift(position, East)
+		move(direction)
+		position = utils.shift(position, direction)
 
+	# ends on stop column
 	parent_results = plant_column(position)
-	for parent_result in parent_results:
-		results.add(parent_result)
+	for result in parent_results:
+		results.add(result)
+
 
 	for child in children:
 		child_results = wait_for(child)
-		for child_result in child_results:
-			results.add(child_result)
+		for result in child_results:
+			results.add(result)
 
 	return results
 
@@ -125,11 +168,12 @@ def harvest_sunflower():
 	if get_entity_type() != Entities.Sunflower:
 		return
 
-	if not can_harvest():
-		(x, y) = (get_pos_x(), get_pos_y())
-		quick_print('inefficient @', (x, y), ', ', utils.distance((x, y), (0, 0)))
-	while not can_harvest():
-		pass
+	if WAIT_FOR_FULLY_GROWN:
+		if not can_harvest():
+			(x, y) = (get_pos_x(), get_pos_y())
+			quick_print('inefficient @', (x, y), ', ', utils.distance((x, y), (0, 0)))
+		while not can_harvest():
+			pass
 
 	harvest()
 

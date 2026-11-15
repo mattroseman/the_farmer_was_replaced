@@ -1,4 +1,5 @@
 import crops
+import utils
 
 WORLD_SIZE = get_world_size()
 
@@ -43,7 +44,8 @@ def plant_column():
 # or because children are already done, so wait_for immediately returns
 def spawner_drone_plant_world():
 	children = set()
-	for _ in range(0, WORLD_SIZE-1):
+
+	for _ in range(WORLD_SIZE-1):
 		child = spawn_drone(plant_column)
 		children.add(child)
 		move(East)
@@ -51,6 +53,40 @@ def spawner_drone_plant_world():
 	
 	for child in children:
 		wait_for(child)
+
+# moves East or West spawning drones until stop x
+def spawn_column_drones(direction, position, stop_x):
+	children = set()
+
+	while position[0] != stop_x:
+		child = spawn_drone(plant_column)
+		children.add(child)
+
+		move(direction)
+		position = utils.shift(position, direction)
+
+	# ends on stop column
+	plant_column()
+
+	for child in children:
+		wait_for(child)
+
+def spawner_both_ways(position):
+	# stop columns where drone spawner ends up
+	east_stop = WORLD_SIZE // 2
+	# west stop is always one right of east stop
+	west_stop = (east_stop + 1) % WORLD_SIZE
+
+	# spawn another drone spawner to move West and spawn drones
+	west_drone_spawner = spawn_drone(spawn_column_drones, West, position, west_stop)
+
+	# while you move East and spawn drones
+	move(East)
+	position = utils.shift(position, East)
+	spawn_column_drones(East, position, east_stop)
+
+	wait_for(west_drone_spawner)
+
 
 # start_bend_y: the row where the first column will start it's bend Westward, followed by the rest
 def plant_l_shape(start_position, start_bend_y=WORLD_SIZE // 2):
@@ -107,7 +143,6 @@ def drone_respawner(position):
 	for child in children:
 		wait_for(child)
 
-
 if __name__ == '__main__':
 	clear()
 	
@@ -128,7 +163,10 @@ if __name__ == '__main__':
 	# world planted in  4.8 seconds, 29177 ticks
 	# spawner_drone_end_same_time(position)
 
-	drone_respawner(position)
+	# drone_respawner(position)
+
+	# world planted in  4.22 seconds, 25632 ticks
+	spawner_both_ways(position)
 	
 	end_time = get_time()
 	end_tick = get_tick_count()
