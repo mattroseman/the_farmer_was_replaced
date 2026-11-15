@@ -99,23 +99,45 @@ def initialize_farm_partitions():
 def plant_field():
 	position = (get_pos_x(), get_pos_y())
 	children = set()
-	results = set()
 
 	east_stop = WORLD_SIZE // 2
 	# west stop is always one right of east stop
 	west_stop = (east_stop + 1) % WORLD_SIZE
 
-	west_spawner_child = spawn_drone(spawn_column_drones, West, position, west_stop)
+	east_child = spawn_drone(move_spawn_then_plant, position, East, east_stop)
+	west_child = spawn_drone(move_spawn_then_plant, position, West, west_stop)
 
-	move(East)
-	position = utils.shift(position, East)
-	parent_results = spawn_column_drones(East, position, east_stop)
-	for result in parent_results:
-		results.add(result)
+	results = plant_column(position)
 
-	west_spawner_results = wait_for(west_spawner_child)
-	for result in west_spawner_results:
-		results.add(result)
+	east_results = wait_for(east_child)
+	west_results = wait_for(west_child)
+
+	merge_results(east_results, west_results)
+	merge_results(results, east_results)
+
+	# west_spawner_child = spawn_drone(spawn_column_drones, West, position, west_stop)
+	# results = spawn_column_drones(East, position, east_stop)
+	# west_spawner_results = wait_for(west_spawner_child)
+	# merge_results(results, west_spawner_results)
+
+	return results
+
+# moves drone from position to given direction
+# if not on stop_x, spawns a replica in the same direction
+# plants column
+def move_spawn_then_plant(position, direction, stop_x):
+	move(direction)
+	position = utils.shift(position, direction)
+
+	child = None
+	if position[0] != stop_x:
+		child = spawn_drone(move_spawn_then_plant, position, direction, stop_x)
+
+	results = plant_column(position)
+
+	if child != None:
+		child_results = wait_for(child)
+		merge_results(results, child_results)
 
 	return results
 
@@ -123,7 +145,6 @@ def plant_field():
 # drone ends on stop_x, and then works that column itself
 def spawn_column_drones(direction, position, stop_x):
 	children = set()
-	results = set()
 
 	while position[0] != stop_x:
 		child = spawn_drone(plant_column, position)
@@ -133,31 +154,78 @@ def spawn_column_drones(direction, position, stop_x):
 		position = utils.shift(position, direction)
 
 	# ends on stop column
-	parent_results = plant_column(position)
-	for result in parent_results:
-		results.add(result)
-
+	results = plant_column(position)
 
 	for child in children:
 		child_results = wait_for(child)
-		for result in child_results:
-			results.add(result)
+		merge_results(results, child_results)
 
 	return results
 
+# results returned as a nested dict of measurement petals to partitions
+# to positions in that partition which had that number of petals
+# {
+#   # 15 petals measured
+#   "15": {
+#		# positions found in position index 3, with 15 petals
+#		# sorted by distance from origin (closer first)
+#		"3": [(0, 0), (0, 5), ...],
+#		"30": [...],
+#		...
+#	},
+#	"14": {...}
+# }
 def plant_column(position):
-	results = set()
+	results = {}
 
 	petals = plant_sunflower(position)
-	results.add((position, petals))
+	add_measurement_to_results(results, position, petals)
+
 	for _ in range(WORLD_SIZE - 1):
 		move(North)
 		position = utils.shift(position, North)
 
 		petals = plant_sunflower(position)
-		results.add((position, petals))
+		add_measurement_to_results(results, position, petals)
 
 	return results
+
+def add_measurement_to_results(results, position, petals):
+	partition = position_to_partition[position]
+
+	if petals in results:
+		if partition in results[petals]:
+			# keep the list of points w/this number of petals in this partition sorted
+			utils.insert_sorted(results[petals][partition], position, utils.is_farther_from_origin)
+		else:
+			results[petals][partition] = [ position ]
+	else:
+		# create a new list of positions, with the number of petals, for this partition
+		results[petals] = { partition: [ position ] }
+
+	return results
+
+# given two results from plant_column, merge_results combines their measurement data
+# keeping lists sorted, and adding keys where necessary
+def merge_results(a, b):
+	# for data found on this petal count
+	for measurement in b:
+		if measurement in a:
+			# for each partition found with measurement petal count
+			for partition in b[measurement]:
+				if partition in a[measurement]:
+					# merge the sorted positions found in this partition and with this number of petals
+					a[measurement][partition] = utils.merge_sorted_lists(
+						a[measurement][partition],
+						b[measurement][partition],
+						utils.is_farther_from_origin
+					)
+				else:
+					a[measurement][partition] = b[measurement][partition]
+		else:
+			a[measurement] = b[measurement]
+
+	return a
 
 def plant_sunflower(position):
 	if get_ground_type() != Grounds.Soil:
@@ -267,20 +335,20 @@ def farm(should_stop=None):
 	quick_print('planting sunflowers')
 	checkpoint()
 
-	positions_and_petals = plant_field()
+	petal_partitions = plant_field()
+	drone.move_to(0, 0)
 
 	(seconds, ticks, _) = checkpoint()['since_last_check']
-	drone.move_to(0, 0)
-	quick_print('plant sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+	quick_print('plant & aggregate sunflowers:', seconds, 'seconds,', ticks, 'ticks')
 	# do_a_flip()
 
-	quick_print('aggregating petal counts')
-	checkpoint()
+	# quick_print('aggregating petal counts')
+	# checkpoint()
 
-	petal_partitions = aggregate_by_petals(positions_and_petals)
+	# petal_partitions = aggregate_by_petals(positions_and_petals)
 
-	(seconds, ticks, _) = checkpoint()['since_last_check']
-	quick_print('aggregate planting data:', seconds, 'seconds,', ticks, 'ticks')
+	# (seconds, ticks, _) = checkpoint()['since_last_check']
+	# quick_print('aggregate planting data:', seconds, 'seconds,', ticks, 'ticks')
 
 	# HARVESTING 
 	quick_print('harvesting sunflowers')
