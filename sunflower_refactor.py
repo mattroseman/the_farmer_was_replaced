@@ -58,7 +58,16 @@
 # total time: 26.34 seconds
 # total rate: 293.45 power/s
 
-# w/ tree-like planting aggregating but harvest drones sorting
+# w/ tree-like planting aggregating but harvest drones sort (nearest neighbor)
+# planting sunflowers
+# plant & aggregate sunflowers: 4.33 seconds, 26303 ticks
+# harvesting sunflowers
+# inefficient @ (14,31) ,  15
+# inefficient @ (20,30) ,  14
+# inefficient @ (16,30) ,  18
+# harvest sunflowers: 20.62 seconds, 125252 ticks
+# total time: 25.01 seconds
+# total rate: 308.62 power/s
 
 import utils
 import drone
@@ -176,46 +185,6 @@ def spawn_drones_to_plant_column_range(direction, columns):
 	merge_results(child_results, your_results)
 	return child_results
 
-# moves drone from position to given direction
-# if not on stop_x, spawns a replica in the same direction
-# plants column
-def move_spawn_then_plant(position, direction, stop_x):
-	move(direction)
-	position = utils.shift(position, direction)
-
-	child = None
-	if position[0] != stop_x:
-		child = spawn_drone(move_spawn_then_plant, position, direction, stop_x)
-
-	results = plant_column(position)
-
-	if child != None:
-		child_results = wait_for(child)
-		merge_results(results, child_results)
-
-	return results
-
-# moves along the current row, spawning a column drone for each column visited
-# drone ends on stop_x, and then works that column itself
-def spawn_column_drones(direction, position, stop_x):
-	children = set()
-
-	while position[0] != stop_x:
-		child = spawn_drone(plant_column, position)
-		children.add(child)
-
-		move(direction)
-		position = utils.shift(position, direction)
-
-	# ends on stop column
-	results = plant_column(position)
-
-	for child in children:
-		child_results = wait_for(child)
-		merge_results(results, child_results)
-
-	return results
-
 # results returned as a nested dict of measurement petals to partitions
 # to positions in that partition which had that number of petals
 # {
@@ -250,7 +219,8 @@ def add_measurement_to_results(results, position, petals):
 	if petals in results:
 		if partition in results[petals]:
 			# keep the list of points w/this number of petals in this partition sorted
-			utils.insert_sorted(results[petals][partition], position, utils.is_farther_from_origin)
+			# utils.insert_sorted(results[petals][partition], position, utils.is_farther_from_origin)
+			results[petals][partition].append(position)
 		else:
 			results[petals][partition] = [ position ]
 	else:
@@ -269,11 +239,13 @@ def merge_results(a, b):
 			for partition in b[measurement]:
 				if partition in a[measurement]:
 					# merge the sorted positions found in this partition and with this number of petals
-					a[measurement][partition] = utils.merge_sorted_lists(
-						a[measurement][partition],
-						b[measurement][partition],
-						utils.is_farther_from_origin
-					)
+					# a[measurement][partition] = utils.merge_sorted_lists(
+					# 	a[measurement][partition],
+					# 	b[measurement][partition],
+					# 	utils.is_farther_from_origin
+					# )
+					for position in b[measurement][partition]:
+						a[measurement][partition].append(position)
 				else:
 					a[measurement][partition] = b[measurement][partition]
 		else:
@@ -348,7 +320,8 @@ def aggregate_by_petals(positions_and_petals, available_drones=0):
 
 # =================== HARVESTING SUNFLOWERS ===================
 
-def harvest_sunflowers(sunflower_partitions):
+# funflower_partitions is a dictionary of partition indecies, and lists of sunflowers in that partition
+def harvest_sunflowers(sunflower_partitions: dict[int, list[tuple]]):
 	children = set()
 
 	# loop through partitions in partitions order, since that's farthest away to closest
@@ -362,10 +335,30 @@ def harvest_sunflowers(sunflower_partitions):
 	for child in children:
 		wait_for(child)
 
-def harvest_partition(sunflower_positions):
-	for position in sunflower_positions:
-		drone.move_to(position[0], position[1])
+# sunflower_positions: a list of position tuples
+def harvest_partition(sunflower_positions: list[tuple]):
+	# utils.sort_by(sunflower_positions, utils.is_farther_from_origin)
+	position = (0, 0)
+
+	while len(sunflower_positions) > 0:
+		nearest_neighbor = sunflower_positions[0]
+		min_distance = utils.distance(nearest_neighbor, position)
+
+		# find nearest neighbor
+		for position in sunflower_positions[1:]:
+			distance = utils.distance(position, (0, 0))
+			if distance < min_distance:
+				nearest_neighbor = position
+				min_distance = distance
+
+		drone.move_to(nearest_neighbor[0], nearest_neighbor[1])
+		position = nearest_neighbor
 		harvest_sunflower()
+		sunflower_positions.remove(position)
+
+	# for position in sunflower_positions:
+	# 	drone.move_to(position[0], position[1])
+	# 	harvest_sunflower()
 
 def harvest_sunflower():
 	if get_entity_type() != Entities.Sunflower:
