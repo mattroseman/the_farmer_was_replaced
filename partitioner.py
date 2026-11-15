@@ -156,24 +156,51 @@ def partition(items: list, num_partitions: int) -> list[list]:
 # }
 # where the rectangular partitioned regions constitute the given starting region
 # partitions should be roughly equal size, but with likely variations
-def partition_region(region_zero, width, height, num_partitions):
+# partition_comparator(a, b): comparison function of partitions a & b, returns True if a > b.
+# 	if not None partitions are sorted ascending order
+def partition_region(region_zero, width, height, num_partitions, partition_comparator=None):
 	partitions_root = region_tree.build_region_tree(region_zero, width, height)
+
+	# BASE CASE
+	if num_partitions <= 1:
+		return region_tree.flatten(partitions_root)
 
 	region_area = region_tree.get_area(partitions_root)
 	if num_partitions > region_area:
 		utils.error("can't partition region of area " + str(region_area) + " into " + str(num_partitions) + " partitions")
 
-	# repeatedly bisect the largest partitions until the goal number of partitions is reached
-	partitions_remaining = num_partitions - 1
-	while partitions_remaining > 0:
-		# get the largest partition
-		largest_partition = region_tree.get_largest_leaf(partitions_root)
-		# split it in half
-		region_tree.split_node_halves(largest_partition)
-		partitions_remaining -= 1
+	# bisect region and recursively partition each half
+	split_vertically = height >= width
 
-	partition_list = region_tree.flatten(partitions_root)
+	A_num_partitions = num_partitions // 2
+	B_num_partitions = num_partitions - A_num_partitions
+	if split_vertically:
+		B_zero = region_zero
+		# make the cut proportional to the percent of partitions B gets
+		B_height = height * (B_num_partitions / num_partitions) // 1
+		B_width = width
 
-	return partition_list
+		A_zero = (region_zero[0], region_zero[1] + B_height)
+		A_height = height - B_height
+		A_width = width
+	# split horizontally a/b
+	else:
+		A_zero = region_zero
+		A_height = height
+		A_width = width * (A_num_partitions / num_partitions) // 1
+
+		B_zero = (region_zero[0] + A_width, region_zero[1])
+		B_height = height
+		B_width = width - A_width
+
+	A_partitioned = partition_region(A_zero, A_width, A_height, A_num_partitions, partition_comparator)
+	B_partitioned = partition_region(B_zero, B_width, B_height, B_num_partitions, partition_comparator)
+
+	if partition_comparator != None:
+		merged = utils.merge_sorted_lists(A_partitioned, B_partitioned, partition_comparator)
+	else:
+		merged = A_partitioned + B_partitioned
+
+	return merged
 
 

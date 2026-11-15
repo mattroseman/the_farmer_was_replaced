@@ -161,6 +161,33 @@ def sort_by(l, comparator=is_greater_than):
 def sort(l):
 	return sort_by(l, is_greater_than)
 
+def merge_sorted_lists(a, b, comparator):
+	len_a = len(a)
+	len_b = len(b)
+	a_i = 0
+	b_i = 0
+	m = []
+
+	# move dual indecies forward, smallest at a time
+	while a_i != len_a and b_i != len_b:
+		if comparator(a[a_i], b[b_i]):
+			m.append(b[b_i])
+			b_i += 1
+		else:
+			m.append(a[a_i])
+			a_i += 1
+
+	# append on the rest of the remaining list
+	if a_i != len_a:
+		for a_i in range(a_i, len_a):
+			m.append(a[a_i])
+	if b_i != len_b:
+		for b_i in range(b_i, len_b):
+			m.append(b[b_i])
+
+	return m
+
+
 def get_distance_from_zero_comparator(is_closer=True):
 	# returns True if a's farther from (0, 0) than b
 	def is_farther_from_zero(a, b):
