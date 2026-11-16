@@ -85,7 +85,12 @@
 # total time: 274.54 seconds
 # total rate: 420.85 power/s
 
-# 
+# w/ dummy plots
+# plant & aggregate sunflowers: 7.39 seconds, 44903 ticks
+# harvest sunflowers: 10.65 seconds, 64703 ticks
+# loop seconds: 18.14 seconds
+# loop rate: 422.12 power/s
+# total rate: 426.99 power/s
 
 import utils
 import drone
@@ -107,9 +112,13 @@ HARVEST_MODE = 'skip_then_wait'
 # sunflowers have 7-15 petals
 MIN_SUNFLOWER_MEASUREMENT = 12
 
+NUM_DUMMY_PLOTS = 10
+
 partitions = []
 # mapping of position to the index of the corresponding partition in partitions
 position_to_partition = {}
+
+dummy_plots = set()
 
 # =================== PARTITIONING FARM ===================
 
@@ -231,14 +240,16 @@ def plant_column(position):
 	results = {}
 
 	petals = plant_sunflower(position)
-	add_measurement_to_results(results, position, petals)
+	if petals != None:
+		add_measurement_to_results(results, position, petals)
 
 	for _ in range(WORLD_SIZE - 1):
 		move(North)
 		position = utils.shift(position, North)
 
 		petals = plant_sunflower(position)
-		add_measurement_to_results(results, position, petals)
+		if petals != None:
+			add_measurement_to_results(results, position, petals)
 
 	return results
 
@@ -276,9 +287,16 @@ def merge_results(a, b):
 
 	return a
 
+# returns: measurement of not-planted sunflower or None if dummy plot
 def plant_sunflower(position):
 	if get_ground_type() != Grounds.Soil:
 		till()
+
+	# once dummy plots are planted, ignore them
+	if position in dummy_plots:
+		if get_entity_type() != Entities.Sunflower:
+			plant_dummy_sunflower(position)
+		return None
 
 	if should_water(position):
 		use_item(Items.Water)
@@ -292,6 +310,18 @@ def plant_sunflower(position):
 		measurement = measure()
 
 	return measurement
+
+def plant_dummy_sunflower(position):
+	drone.move_to(position[0], position[1])
+
+	if get_ground_type() != Grounds.Soil:
+		till()
+
+	plant(Entities.Sunflower)
+	# dummy sunflowers have to be less than all others
+	while measure() >= MIN_SUNFLOWER_MEASUREMENT:
+		harvest()
+		plant(Entities.Sunflower)
 
 def should_water(position):
 	if not WATER_CROP:
@@ -414,11 +444,40 @@ def harvest_sunflower(wait=None) -> bool:
 	harvest()
 	return True
 
+def setup_dummy_plots():
+	global dummy_plots
+
+	dummy_plots = set()
+
+	# put dummy plots in last two columns to be planted
+	left_plots_x = WORLD_SIZE // 2
+	num_rows = -(-NUM_DUMMY_PLOTS // 2)
+	dummy_plot_start_y = (WORLD_SIZE // 2) - (num_rows // 2)
+
+	for i in range(NUM_DUMMY_PLOTS):
+		x = left_plots_x + (i % 2)
+		y = dummy_plot_start_y + (i // 2)
+		dummy_plots.add((x, y))
+
+	children = set()
+	for dummy_plot in dummy_plots:
+		child = spawn_drone(plant_dummy_sunflower, dummy_plot)
+		children.add(child)
+
+	for child in children:
+		wait_for(child)
+
+	return dummy_plots
+
 def farm(should_stop=None):
+	global dummy_plots
+
 	quick_print('---')
 	run_checkpoint = utils.set_checkpoint()
 
+	dummy_plot_child = spawn_drone(setup_dummy_plots)
 	initialize_farm_partitions()
+	dummy_plots = wait_for(dummy_plot_child)
 
 	drone.move_to(0, 0)
 	position = (0, 0)
@@ -466,7 +525,8 @@ def farm(should_stop=None):
 
 		(seconds, _, item_diff) = loop_checkpoint()['since_checkpoint']
 		rate = item_diff[Items.Power] / seconds
-		quick_print('rate:', rate, 'power/s')
+		quick_print('loop seconds:', seconds, 'seconds')
+		quick_print('loop rate:', rate, 'power/s')
 
 		(seconds, _, item_diff) = run_checkpoint()['since_checkpoint']
 		rate = item_diff[Items.Power] / seconds
