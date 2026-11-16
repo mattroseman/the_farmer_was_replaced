@@ -68,6 +68,25 @@
 # total time: 184.62 seconds
 # total rate: 377.87 power/s
 
+# w/ tree-based harvester spawning
+# planting sunflowers
+# plant & aggregate sunflowers: 7.67 seconds, 46566 ticks
+# harvesting sunflowers
+# inefficient @ (26,31) ,  7
+# harvest sunflowers: 10.44 seconds, 63404 ticks
+# total time: 281.87 seconds
+# total rate: 409.33 power/s
+
+# w/ above and 32 partitions
+# planting sunflowers
+# plant & aggregate sunflowers: 8.67 seconds, 52700 ticks
+# harvesting sunflowers
+# harvest sunflowers: 10.32 seconds, 62709 ticks
+# total time: 274.54 seconds
+# total rate: 420.85 power/s
+
+# 
+
 import utils
 import drone
 import partitioner
@@ -75,10 +94,18 @@ import partitioner
 WORLD_SIZE = get_world_size()
 
 WATER_CROP = True
-WAIT_FOR_FULLY_GROWN = False
+
+# determines behavior, with not-fully-grown crops
+# 'wait': 			wait for the sunflower to fully grow 
+# 'skip_then_wait': continue harvesting partition and come back, then wait
+# 'ignore': 		harvest anyway, and lost the power
+HARVEST_MODE = 'skip_then_wait'
+# NOTE 'ignore' works well in leaderboard runs, with limited water
+# 'skip_then_wait' works best with plenty of water available
+
 # limit range of measurements during planting
 # sunflowers have 7-15 petals
-MIN_SUNFLOWER_MEASUREMENT = 12 
+MIN_SUNFLOWER_MEASUREMENT = 12
 
 partitions = []
 # mapping of position to the index of the corresponding partition in partitions
@@ -96,7 +123,7 @@ def initialize_farm_partitions():
 
 	# one main drone remains and spawns all children
 	# or number of plots, if that's smaller
-	num_partitions = min(max_drones() - 1, WORLD_SIZE*WORLD_SIZE)
+	num_partitions = min(max_drones(), WORLD_SIZE*WORLD_SIZE)
 
 	# sort partitions by distance from origin, ascending from farthest to closest
 	def is_closer_to_origin(a, b):
@@ -240,12 +267,6 @@ def merge_results(a, b):
 			# for each partition found with measurement petal count
 			for partition in b[measurement]:
 				if partition in a[measurement]:
-					# merge the sorted positions found in this partition and with this number of petals
-					# a[measurement][partition] = utils.merge_sorted_lists(
-					# 	a[measurement][partition],
-					# 	b[measurement][partition],
-					# 	utils.is_farther_from_origin
-					# )
 					for position in b[measurement][partition]:
 						a[measurement][partition].append(position)
 				else:
@@ -270,7 +291,7 @@ def plant_sunflower(position):
 		plant(Entities.Sunflower)
 		measurement = measure()
 
-	return measure()
+	return measurement
 
 def should_water(position):
 	if not WATER_CROP:
@@ -280,51 +301,88 @@ def should_water(position):
 		return False
 
 	water_left = num_items(Items.Water)
-	if water_left == 10:
+	if water_left <= 20:
 		return False
 	if water_left < 1000:
-		return position[1] > 24
+		return position[1] > WORLD_SIZE // 2 
 
 	return True
 
 # =================== HARVESTING SUNFLOWERS ===================
 
+# spawn a child to harvest half the partitions, then recursively call harvest_sunflowers() on the other half
+# tree-like spawning
+# sunflower_partitions: {
+#	# sunflowers to harvest in partition 23
+# 	'23': [(17, 22), ...],
+#	'24': [...],
+#	...
+# }
 def harvest_sunflowers(sunflower_partitions):
-	children = set()
+	num_partitions = len(sunflower_partitions)
 
-	# loop through partitions in partitions order, since that's farthest away to closest
+	# BASE CASE
+	if num_partitions <= 1:
+		for partition in sunflower_partitions:
+			sunflowers = sunflower_partitions[partition]
+			harvest_partition(sunflowers)
+
+		return
+
+	# available_drones = max_drones() - num_drones()
+	# if available_drones < num_partitions:
+	# 	utils.error('not enough drones')
+
+	partitions_sorted = []
 	for partition_i in range(len(partitions)):
-		if partition_i not in sunflower_partitions:
-			continue
+		# if this partitions index is a key in sunflower_partitions
+		if partition_i in sunflower_partitions:
+			partitions_sorted.append(partition_i)
 
-		child = spawn_drone(harvest_partition, sunflower_partitions[partition_i])
-		children.add(child)
+	# split sunflower_paritions dict into two halves
+	half_partition_count = num_partitions // 2
+	half_partitions = {}
+	other_half_partitions = {}
+	for i in partitions_sorted[:half_partition_count]:
+		half_partitions[i] = sunflower_partitions[i]
+	for i in partitions_sorted[half_partition_count:]:
+		other_half_partitions[i] = sunflower_partitions[i]
 
-	for child in children:
+	# spawn a drone to handle one half
+	child = spawn_drone(harvest_sunflowers, half_partitions)
+	if child == None:
+		harvest_sunflowers(half_partitions)
+	# and recursively handle the other
+	harvest_sunflowers(other_half_partitions)
+
+	if child != None:
 		wait_for(child)
 
-# assumes start at (0, 0)
 def harvest_partition(sunflower_positions):
 	# utils.sort_by(sunflower_positions, utils.is_farther_from_origin)
-	position = (0, 0)
+	position = (get_pos_x(), get_pos_y())
 
 	skipped = set()
 	while len(sunflower_positions) > 0:
 		# find nearest neighbor
 		nearest_neighbor = sunflower_positions[0]
+		nearest_neighbor_i = 0
 		min_distance = utils.distance(nearest_neighbor, position)
-		for candidate_position in sunflower_positions[1:]:
+		for i in range(1, len(sunflower_positions)):
+			candidate_position = sunflower_positions[i]
+
 			distance = utils.distance(candidate_position, position)
 			if distance < min_distance:
 				nearest_neighbor = candidate_position
+				nearest_neighbor_i = i
 				min_distance = distance
 
 		drone.move_to(nearest_neighbor[0], nearest_neighbor[1])
 		position = nearest_neighbor
 
 		success = harvest_sunflower()
-		sunflower_positions.remove(position)
-		if not success:
+		sunflower_positions.pop(nearest_neighbor_i)
+		if not success and HARVEST_MODE == 'skip_then_wait':
 			skipped.add(position)
 
 	for position in skipped:
@@ -333,48 +391,57 @@ def harvest_partition(sunflower_positions):
 		harvest_sunflower(True)
 
 # returns True if sunflower successfully harvested
-def harvest_sunflower(wait=WAIT_FOR_FULLY_GROWN) -> bool:
+def harvest_sunflower(wait=None) -> bool:
 	if get_entity_type() != Entities.Sunflower:
 		return False
 
+	if wait == None:
+		wait = HARVEST_MODE == 'wait'
+
 	if wait:
-		if not can_harvest():
-			(x, y) = (get_pos_x(), get_pos_y())
-			quick_print('inefficient @', (x, y), ', ', utils.distance((x, y), (0, 0)))
+		# if not can_harvest():
+		# 	(x, y) = (get_pos_x(), get_pos_y())
+		# 	quick_print('inefficient @', (x, y), ', ', utils.distance((x, y), (0, 0)))
 		while not can_harvest():
 			pass
 	else:
 		if not can_harvest():
 			# (x, y) = (get_pos_x(), get_pos_y())
 			# quick_print('missed harvest @', (x, y), ', ', utils.distance((x, y), (0, 0)))
+			harvest()
 			return False
 
 	harvest()
 	return True
 
 def farm(should_stop=None):
-	checkpoint = utils.set_checkpoint()
+	quick_print('---')
+	run_checkpoint = utils.set_checkpoint()
 
 	initialize_farm_partitions()
 
-	while should_stop == None or not should_stop():
-		# PLANTING
-		quick_print('planting sunflowers')
-		checkpoint()
+	drone.move_to(0, 0)
+	position = (0, 0)
 
+	while should_stop == None or not should_stop():
+		loop_checkpoint = utils.set_checkpoint()
+
+		# PLANTING
 		petal_partitions = plant_field()
 
 		if should_stop != None and should_stop():
 			return
 
-		(seconds, ticks, _) = checkpoint()['since_last_check']
-		drone.move_to(0, 0)
+		(seconds, ticks, _) = loop_checkpoint()['since_last_check']
 		quick_print('plant & aggregate sunflowers:', seconds, 'seconds,', ticks, 'ticks')
 
-		# HARVESTING 
-		quick_print('harvesting sunflowers')
-		checkpoint()
+		drone.move_to(0, 0)
+		position = (0, 0)
 
+		# HARVESTING 
+		loop_checkpoint()
+
+		your_partition = position_to_partition[position]
 		for petal_count in range(15, 6, -1):
 			if petal_count not in petal_partitions:
 				continue
@@ -382,17 +449,29 @@ def farm(should_stop=None):
 			if should_stop != None and should_stop():
 				return
 
-			harvest_sunflowers(petal_partitions[petal_count])
+			# if there are sunflowers to harvest in your partition, reserve it for yourself
+			your_sunflowers = None
+			if your_partition in petal_partitions[petal_count]:
+				your_sunflowers = petal_partitions[petal_count][your_partition]
+				petal_partitions[petal_count].pop(your_partition)
 
-		(seconds, ticks, _) = checkpoint()['since_last_check']
+			child = spawn_drone(harvest_sunflowers, petal_partitions[petal_count])
+			if your_sunflowers != None:
+				harvest_partition(your_sunflowers)
+
+			wait_for(child)
+
+		(seconds, ticks, _) = loop_checkpoint()['since_last_check']
 		quick_print('harvest sunflowers:', seconds, 'seconds,', ticks, 'ticks')
 
-		(seconds, _, item_diff) = checkpoint()['since_checkpoint']
-		quick_print('total time:', seconds, 'seconds')
+		(seconds, _, item_diff) = loop_checkpoint()['since_checkpoint']
+		rate = item_diff[Items.Power] / seconds
+		quick_print('rate:', rate, 'power/s')
+
+		(seconds, _, item_diff) = run_checkpoint()['since_checkpoint']
 		rate = item_diff[Items.Power] / seconds
 		quick_print('total rate:', rate, 'power/s')
 
 if __name__ == '__main__':
 	clear()
-	quick_print('---')
 	farm()
