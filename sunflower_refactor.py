@@ -1,97 +1,3 @@
-# w/out fast dual-spawner planting and w/ water
-# planting sunflowers
-# plant sunflowers: 6.93 seconds, 42082 ticks
-# aggregating petal counts
-# aggregate planting data: 0.7 seconds, 4259 ticks
-# harvesting sunflowers
-# inefficient @ (22,31) ,  11
-# inefficient @ (28,29) ,  7
-# inefficient @ (31,31) ,  2
-# inefficient @ (28,31) ,  5
-# harvest sunflowers: 25.01 seconds, 151921 ticks
-# total time: 32.8 seconds
-# total rate: 231.19 power/s
-
-# w/ fast dual-spawner planting and w/ water
-# planting sunflowers
-# plant sunflowers: 4.85 seconds, 29458 ticks
-# aggregating petal counts
-# aggregate planting data: 0.7 seconds, 4259 ticks
-# harvesting sunflowers
-# harvest sunflowers: 27.21 seconds, 165329 ticks
-# total time: 33.46 seconds
-# total rate: 227.53 power/s 
-
-# w/ partitioned world and w/ water
-# planting sunflowers
-# plant sunflowers: 4.75 seconds, 28858 ticks
-# aggregating petal counts
-# aggregate planting data: 1.71 seconds, 10385 ticks
-# harvesting sunflowers
-# harvest sunflowers: 21.29 seconds, 129361 ticks
-# total time: 28.45 seconds
-# total rate: 271.63 power/s
-
-# w/ partitioned world and sorted positions and w/ water
-# planting sunflowers
-# plant sunflowers: 4.75 seconds, 28858 ticks
-# aggregating petal counts
-# aggregate planting data: 1.71 seconds, 10385 ticks
-# harvesting sunflowers
-# harvest sunflowers: 21.29 seconds, 129361 ticks
-# total time: 28.45 seconds
-# total rate: 271.63 power/s
-
-# w/ above & limited range of petal-counts planted
-# planting sunflowers
-# plant sunflowers: 5.56 seconds, 33790 ticks
-# aggregating petal counts
-# aggregate planting data: 2.55 seconds, 15473 ticks
-# harvesting sunflowers
-# harvest sunflowers: 14.1 seconds, 85645 ticks
-# total time: 22.9 seconds
-# total rate: 337.49 power/s
-
-# w/ above & fast-tree-plant algorithm from sunflower_4
-# planting sunflowers
-# plant & aggregate sunflowers: 5.52 seconds, 33513 ticks
-# harvesting sunflowers
-# harvest sunflowers: 15.65 seconds, 95068 ticks
-# total time: 220.63 seconds
-# total rate: 349.8 power/s
-
-# w/ above and nearest neighbor by each harvester
-# planting sunflowers
-# plant & aggregate sunflowers: 6.02 seconds, 36581 ticks
-# harvesting sunflowers
-# harvest sunflowers: 14.44 seconds, 87735 ticks
-# total time: 184.62 seconds
-# total rate: 377.87 power/s
-
-# w/ tree-based harvester spawning
-# planting sunflowers
-# plant & aggregate sunflowers: 7.67 seconds, 46566 ticks
-# harvesting sunflowers
-# inefficient @ (26,31) ,  7
-# harvest sunflowers: 10.44 seconds, 63404 ticks
-# total time: 281.87 seconds
-# total rate: 409.33 power/s
-
-# w/ above and 32 partitions
-# planting sunflowers
-# plant & aggregate sunflowers: 8.67 seconds, 52700 ticks
-# harvesting sunflowers
-# harvest sunflowers: 10.32 seconds, 62709 ticks
-# total time: 274.54 seconds
-# total rate: 420.85 power/s
-
-# w/ dummy plots
-# plant & aggregate sunflowers: 7.39 seconds, 44903 ticks
-# harvest sunflowers: 10.65 seconds, 64703 ticks
-# loop seconds: 18.14 seconds
-# loop rate: 422.12 power/s
-# total rate: 426.99 power/s
-
 import utils
 import drone
 import partitioner
@@ -535,3 +441,97 @@ def farm(should_stop=None):
 if __name__ == '__main__':
 	clear()
 	farm()
+
+# w/out fast dual-spawner planting and w/ water
+# planting sunflowers
+# plant sunflowers: 6.93 seconds, 42082 ticks
+# aggregating petal counts
+# aggregate planting data: 0.7 seconds, 4259 ticks
+# harvesting sunflowers
+# inefficient @ (22,31) ,  11
+# inefficient @ (28,29) ,  7
+# inefficient @ (31,31) ,  2
+# inefficient @ (28,31) ,  5
+# harvest sunflowers: 25.01 seconds, 151921 ticks
+# total time: 32.8 seconds
+# total rate: 231.19 power/s
+
+# w/ fast dual-spawner planting and w/ water
+# planting sunflowers
+# plant sunflowers: 4.85 seconds, 29458 ticks
+# aggregating petal counts
+# aggregate planting data: 0.7 seconds, 4259 ticks
+# harvesting sunflowers
+# harvest sunflowers: 27.21 seconds, 165329 ticks
+# total time: 33.46 seconds
+# total rate: 227.53 power/s 
+
+# w/ partitioned world and w/ water
+# planting sunflowers
+# plant sunflowers: 4.75 seconds, 28858 ticks
+# aggregating petal counts
+# aggregate planting data: 1.71 seconds, 10385 ticks
+# harvesting sunflowers
+# harvest sunflowers: 21.29 seconds, 129361 ticks
+# total time: 28.45 seconds
+# total rate: 271.63 power/s
+
+# w/ partitioned world and sorted positions and w/ water
+# planting sunflowers
+# plant sunflowers: 4.75 seconds, 28858 ticks
+# aggregating petal counts
+# aggregate planting data: 1.71 seconds, 10385 ticks
+# harvesting sunflowers
+# harvest sunflowers: 21.29 seconds, 129361 ticks
+# total time: 28.45 seconds
+# total rate: 271.63 power/s
+
+# w/ above & limited range of petal-counts planted
+# planting sunflowers
+# plant sunflowers: 5.56 seconds, 33790 ticks
+# aggregating petal counts
+# aggregate planting data: 2.55 seconds, 15473 ticks
+# harvesting sunflowers
+# harvest sunflowers: 14.1 seconds, 85645 ticks
+# total time: 22.9 seconds
+# total rate: 337.49 power/s
+
+# w/ above & fast-tree-plant algorithm from sunflower_4
+# planting sunflowers
+# plant & aggregate sunflowers: 5.52 seconds, 33513 ticks
+# harvesting sunflowers
+# harvest sunflowers: 15.65 seconds, 95068 ticks
+# total time: 220.63 seconds
+# total rate: 349.8 power/s
+
+# w/ above and nearest neighbor by each harvester
+# planting sunflowers
+# plant & aggregate sunflowers: 6.02 seconds, 36581 ticks
+# harvesting sunflowers
+# harvest sunflowers: 14.44 seconds, 87735 ticks
+# total time: 184.62 seconds
+# total rate: 377.87 power/s
+
+# w/ tree-based harvester spawning
+# planting sunflowers
+# plant & aggregate sunflowers: 7.67 seconds, 46566 ticks
+# harvesting sunflowers
+# inefficient @ (26,31) ,  7
+# harvest sunflowers: 10.44 seconds, 63404 ticks
+# total time: 281.87 seconds
+# total rate: 409.33 power/s
+
+# w/ above and 32 partitions
+# planting sunflowers
+# plant & aggregate sunflowers: 8.67 seconds, 52700 ticks
+# harvesting sunflowers
+# harvest sunflowers: 10.32 seconds, 62709 ticks
+# total time: 274.54 seconds
+# total rate: 420.85 power/s
+
+# w/ dummy plots
+# plant & aggregate sunflowers: 7.39 seconds, 44903 ticks
+# harvest sunflowers: 10.65 seconds, 64703 ticks
+# loop seconds: 18.14 seconds
+# loop rate: 422.12 power/s
+# total rate: 426.99 power/s
