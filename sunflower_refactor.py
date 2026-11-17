@@ -65,6 +65,31 @@ def initialize_farm_partitions():
 			for y in range(partition['zero'][1], partition['zero'][1] + partition['height']):
 				position_to_partition[(x, y)] = partition_i
 
+def setup_dummy_plots():
+	global dummy_plots
+
+	dummy_plots = set()
+
+	# put dummy plots in last two columns to be planted
+	left_plots_x = WORLD_SIZE // 2
+	num_rows = -(-NUM_DUMMY_PLOTS // 2)
+	dummy_plot_start_y = (WORLD_SIZE // 2) - (num_rows // 2)
+
+	for i in range(NUM_DUMMY_PLOTS):
+		x = left_plots_x + (i % 2)
+		y = dummy_plot_start_y + (i // 2)
+		dummy_plots.add((x, y))
+
+	children = set()
+	for dummy_plot in dummy_plots:
+		child = spawn_drone(plant_dummy_sunflower, dummy_plot)
+		children.add(child)
+
+	for child in children:
+		wait_for(child)
+
+	return dummy_plots
+
 # =================== PLANTING SUNFLOWERS ===================
 
 def plant_field():
@@ -350,34 +375,65 @@ def harvest_sunflower(wait=None) -> bool:
 	harvest()
 	return True
 
-def setup_dummy_plots():
-	global dummy_plots
+# =================== CONTROL ===================
 
-	dummy_plots = set()
+def farm_loop(should_stop=None):
+	# tracking
+	loop_checkpoint = utils.set_checkpoint()
 
-	# put dummy plots in last two columns to be planted
-	left_plots_x = WORLD_SIZE // 2
-	num_rows = -(-NUM_DUMMY_PLOTS // 2)
-	dummy_plot_start_y = (WORLD_SIZE // 2) - (num_rows // 2)
+	# PLANTING
+	petal_partitions = plant_field()
 
-	for i in range(NUM_DUMMY_PLOTS):
-		x = left_plots_x + (i % 2)
-		y = dummy_plot_start_y + (i // 2)
-		dummy_plots.add((x, y))
+	if should_stop != None and should_stop():
+		return
 
-	children = set()
-	for dummy_plot in dummy_plots:
-		child = spawn_drone(plant_dummy_sunflower, dummy_plot)
-		children.add(child)
+	# tracking
+	(seconds, ticks, _) = loop_checkpoint()['since_last_check']
+	quick_print('plant & aggregate sunflowers:', seconds, 'seconds,', ticks, 'ticks')
 
-	for child in children:
+	drone.move_to(0, 0)
+	position = (0, 0)
+
+	# HARVESTING 
+
+	# tracking
+	loop_checkpoint()
+
+	your_partition = position_to_partition[position]
+	for petal_count in range(15, 6, -1):
+		if petal_count not in petal_partitions:
+			continue
+
+		if should_stop != None and should_stop():
+			return
+
+		# if there are sunflowers to harvest in your partition, reserve it for yourself
+		your_sunflowers = None
+		if your_partition in petal_partitions[petal_count]:
+			your_sunflowers = petal_partitions[petal_count][your_partition]
+			petal_partitions[petal_count].pop(your_partition)
+
+		child = spawn_drone(harvest_sunflowers, petal_partitions[petal_count])
+		if your_sunflowers != None:
+			harvest_partition(your_sunflowers)
+
 		wait_for(child)
 
-	return dummy_plots
+	# only tracking below
+
+	(seconds, ticks, _) = loop_checkpoint()['since_last_check']
+	quick_print('harvest sunflowers:', seconds, 'seconds,', ticks, 'ticks')
+
+	(seconds, _, item_diff) = loop_checkpoint()['since_checkpoint']
+	rate = item_diff[Items.Power] / seconds
+	quick_print('loop seconds:', seconds, 'seconds')
+	quick_print('loop rate:', rate, 'power/s')
+
 
 def farm(should_stop=None):
 	global dummy_plots
 
+	# tracking
 	quick_print('---')
 	run_checkpoint = utils.set_checkpoint()
 
@@ -386,57 +442,15 @@ def farm(should_stop=None):
 	dummy_plots = wait_for(dummy_plot_child)
 
 	drone.move_to(0, 0)
-	position = (0, 0)
 
 	while should_stop == None or not should_stop():
-		loop_checkpoint = utils.set_checkpoint()
+		farm_loop(should_stop)
 
-		# PLANTING
-		petal_partitions = plant_field()
-
-		if should_stop != None and should_stop():
-			return
-
-		(seconds, ticks, _) = loop_checkpoint()['since_last_check']
-		quick_print('plant & aggregate sunflowers:', seconds, 'seconds,', ticks, 'ticks')
-
-		drone.move_to(0, 0)
-		position = (0, 0)
-
-		# HARVESTING 
-		loop_checkpoint()
-
-		your_partition = position_to_partition[position]
-		for petal_count in range(15, 6, -1):
-			if petal_count not in petal_partitions:
-				continue
-
-			if should_stop != None and should_stop():
-				return
-
-			# if there are sunflowers to harvest in your partition, reserve it for yourself
-			your_sunflowers = None
-			if your_partition in petal_partitions[petal_count]:
-				your_sunflowers = petal_partitions[petal_count][your_partition]
-				petal_partitions[petal_count].pop(your_partition)
-
-			child = spawn_drone(harvest_sunflowers, petal_partitions[petal_count])
-			if your_sunflowers != None:
-				harvest_partition(your_sunflowers)
-
-			wait_for(child)
-
-		(seconds, ticks, _) = loop_checkpoint()['since_last_check']
-		quick_print('harvest sunflowers:', seconds, 'seconds,', ticks, 'ticks')
-
-		(seconds, _, item_diff) = loop_checkpoint()['since_checkpoint']
-		rate = item_diff[Items.Power] / seconds
-		quick_print('loop seconds:', seconds, 'seconds')
-		quick_print('loop rate:', rate, 'power/s')
-
+		# tracking
 		(seconds, _, item_diff) = run_checkpoint()['since_checkpoint']
 		rate = item_diff[Items.Power] / seconds
 		quick_print('total rate:', rate, 'power/s')
+
 
 if __name__ == '__main__':
 	clear()

@@ -200,7 +200,7 @@ def farm_region(args):
 	else:
 		(patch_zero, region_zero, width, height, should_stop) = args
 
-	drone_path = paths.build_space_filling_path(region_zero, width, height)
+	drone_path = paths.build_hamiltonian_loop(region_zero, width, height)
 
 	initialize_edges(patch_zero, width, height)
 
