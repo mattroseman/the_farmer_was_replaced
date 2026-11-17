@@ -88,10 +88,82 @@ def move_to(x, y):
 				move(South)
 				
 			current_y = get_pos_y()
-			
+
 def move_to_center():
 	center = (WORLD_SIZE // 2, WORLD_SIZE // 2)
 	move_to(center[0], center[1])
+
+# 5 ticks overhead + 200 ticks/num_moves
+# tick-optimized moves in one direction
+def precise_move_n(direction, num_moves):
+	# 1 tick
+	two_steps = num_moves // 2
+
+	# 2 ticks
+	for _ in range(two_steps):
+		# 200 ticks
+		move(direction)
+		# 200 ticks
+		move(direction)
+
+	# 2 ticks
+	if num_moves % 2:
+		# 200 ticks
+		move(direction)
+
+# 10 base, 7 / axis moved, 200 / step
+# optimized, yet convoluted, version of move_to()
+# minimum & predictible number of ticks
+def precise_move_to(start: tuple[int, int], end: tuple[int, int]) -> None:
+	# 0 tick
+	(start_x, start_y) = start
+	# 0 tick
+	(end_x, end_y) = end
+
+	# 2 tick
+	start_y_diff = (start_y - end_y) % WORLD_SIZE
+	# 2 tick
+	end_y_diff = (end_y - start_y) % WORLD_SIZE
+	# 2 tick
+	start_x_diff = (start_x - end_x) % WORLD_SIZE
+	# 2 tick
+	end_x_diff = (end_x - start_x) % WORLD_SIZE
+
+	# TODO try only modular arithmetic when in if statement
+
+	# 1 ticks
+	if start_x_diff:
+		# 2 ticks
+		if end_x_diff < start_x_diff:
+			# 5 ticks overhead + 200 ticks/num_moves
+			precise_move_n(East, end_x_diff)
+		else:
+			# 5 ticks overhead + 200 ticks/num_moves
+			precise_move_n(West, start_x_diff)
+
+	# 1 ticks
+	if start_y_diff:
+		# 2 ticks
+		if end_y_diff < start_y_diff:
+			# 5 ticks overhead + 200 ticks/num_moves
+			precise_move_n(North, end_y_diff)
+		else:
+			# 5 ticks overhead + 200 ticks/num_moves
+			precise_move_n(South, start_y_diff)
+
+# calculates the tick cost of a movement from start to end,
+# using precise_move_to above
+def quote_precise_move_cost(start, end) -> int:
+	(start_x, start_y) = start
+	(end_x, end_y) = end
+
+	axis_x_changes = start_x != end_x
+	axis_y_changes = start_y != end_y
+
+	num_steps = utils.distance(start, end)
+
+	return 10 + 7*axis_x_changes + 7*axis_y_changes + 200*num_steps 
+
 			
 def look_around(sense, no_wrap=False):
 	# if no_wrap specified, don't look past the world edges, to the other side

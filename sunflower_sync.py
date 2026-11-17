@@ -131,10 +131,10 @@ def plant_partition(partition_id: int) -> dict:
 	path = partition['path']
 
 	# tracks sub path for each petal count
-	petals_paths = {}
+	petal_paths = {}
 	# initizlize 
 	for petals in range(MIN_PETALS_ALLOWED, MAX_PETALS + 1):
-		petals_paths[petals] = {
+		petal_paths[petals] = {
 			# all petals' paths start where the partition's path starts
 			'path': [path[0]],
 			'distance': 0
@@ -149,11 +149,11 @@ def plant_partition(partition_id: int) -> dict:
 
 		# update tracking
 		if petals != None:
-			last_step = petals_paths[petals]['path'][-1]
-			petals_paths[petals]['path'].append(step)
-			petals_paths[petals]['distance'] += utils.distance(last_step, step)
+			last_step = petal_paths[petals]['path'][-1]
+			petal_paths[petals]['path'].append(step)
+			petal_paths[petals]['distance'] += utils.distance(last_step, step)
 
-	return petals_paths
+	return petal_paths
 
 
 # returns: measurement of not-planted sunflower or None if dummy plot
@@ -231,15 +231,20 @@ def harvest_partition(partition, petals_max_distance: dict[int, int]):
 	# TODO drones spawned with sync ticks passed in
 	# TODO on specific ticks, drones harvest measurment at same time
 
+	position = (get_pos_x(), get_pos_y())
+
 	for petals in range(MAX_PETALS, MIN_PETALS_ALLOWED - 1, - 1):
 		petal_path = partitions[partition]['petal_paths'][petals]
 
 		quick_print('petal_path length: ', len(petal_path))
 
-		for step in petal_path:
-			drone.move_to(step[0], step[1])
-			harvest()
+		# TODO continue tracking tick counts and call
+		# TODO drone.quote_whatever() after planting
 
+		for step in petal_path:
+			drone.precise_move_to(position, step)
+			# 200 ticks
+			harvest()
 
 # =================== CONTROL ===================
 
@@ -323,10 +328,9 @@ def farm(should_stop=None):
 
 # this function is to run a drone through a mock harvest, and print the tick counts for actions
 # this data can then invorm the sync schedule drones are put on, based on number of harvests they need to do
-def test_harvest_ticks():
+# returns: list of tuples of path length, total path distance, and ticks that path took to harvest
+def test_harvest_ticks() -> list[tuple]:
 	global partitions
-
-	initialize_farm_partitions()
 
 	# 32 partitions, on 32x32 world, average partition size of 32
 	partition =  {
@@ -341,13 +345,69 @@ def test_harvest_ticks():
 	)
 	partition['path'] = path
 
-	partitions[0] = partition
+	# manually create only partition, instead of having to initialize_farm_partitions()
+	partitions.append(partition)
 	partition_id = 0
 
-	plant_partition(partition_id)
+	petal_paths = plant_partition(partition_id)
+
+	results = []
+
+	for petals in petal_paths:
+		path = petal_paths[petals]['path']
+		distance = petal_paths[petals]['distance']
+
+		drone.move_to(partition['zero'][0], partition['zero'][1])
+
+		quick_print(str('starting ' + str(petals) + '-petals path'))
+		quick_print('distance: ', distance)
+		start_tick = get_tick_count()
+
+		for step in path:
+			drone.move_to(step[0], step[1])
+			harvest()
+
+		stop_tick = get_tick_count()
+		num_ticks = stop_tick - start_tick
+		quick_print(num_ticks, 'ticks')
+
+		results.append((len(path), distance, num_ticks))
+
+	return results
+
+def get_average_harvest_ticks_per_distance():
+	num_runs = 20
+
+	# num_ticks / distance for each petal-harvest run
+	all_results = []
+
+	for _ in range(num_runs):
+		results = test_harvest_ticks()
+		for result in results:
+			path_length = results[0]
+			distance = result[1]
+			num_ticks = result[2]
+			rate = num_ticks / distance
+
+			all_results.append(rate)
+
+
+	num_results = len(all_results)
+	mean = utils.avg_list(all_results)
+	diffs_squared = []
+	for result in all_results:
+		diff = abs(result - mean)
+		diff_squared = diff**2
+		diffs_squared.append(diff_squared)
+	sum_diffs_squared = utils.sum_list(diffs_squared)
+	standard_deviation = (sum_diffs_squared / num_results)**0.5
+
+	quick_print('mean', mean, 'ticks / step')
+	quick_print('standard deviation', standard_deviation, 'ticks / step')
 
 if __name__ == '__main__':
 	clear()
 	# farm()
 
-	test_harvest_ticks()
+	# test_harvest_ticks()
+	get_average_harvest_ticks_per_distance()
