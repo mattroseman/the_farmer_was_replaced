@@ -120,8 +120,9 @@ def setup_dummy_plots():
 #		7: {
 #			# path of those 7-petal sunflowers in this partition
 #			'path': [(0, 0), (0, 1), ...],
-#			# distance to travel path, in order
-#			'distance': 23
+#			# estimated number of ticks to harvest these sunflowers
+#			# starting at partition's zero
+#			'tick_estimate': 5323
 # 		}
 #	}
 def plant_partition(partition_id: int) -> dict:
@@ -137,7 +138,8 @@ def plant_partition(partition_id: int) -> dict:
 		petal_paths[petals] = {
 			# all petals' paths start where the partition's path starts
 			'path': [path[0]],
-			'distance': 0
+			# for overhead in harvest_partition(), that's per petal-count instead of per sunflower
+			'tick_estimate': 4
 		}
 
 	# plant and measure paths
@@ -149,9 +151,12 @@ def plant_partition(partition_id: int) -> dict:
 
 		# update tracking
 		if petals != None:
-			last_step = petal_paths[petals]['path'][-1]
 			petal_paths[petals]['path'].append(step)
-			petal_paths[petals]['distance'] += utils.distance(last_step, step)
+
+	for petals in range(MIN_PETALS_ALLOWED, MAX_PETALS + 1):
+		petal_path = petal_paths[petals]['path']
+		tick_estimate = quote_harvest_cost(petal_path)
+		petal_paths[petals]['tick_estimate'] = tick_estimate
 
 	return petal_paths
 
@@ -209,8 +214,8 @@ def should_water(position):
 
 # =================== HARVESTING SUNFLOWERS ===================
 
-# petals_max_distance is max distance traversed by any partition, for each petal count's harvest
-def spawn_harvesters(petals_max_distance: dict[int, int], spawn_partitions=partitions):
+# petals_max_ticks is the estimated max ticks it'll take for each petal to be fully harvested
+def spawn_harvesters(petals_max_ticks: dict[int, int], spawn_partitions=partitions):
 	num_spawn_partitions = len(spawn_partitions)
 	half_partitions_pivot = num_spawn_partitions // 2
 
@@ -220,31 +225,80 @@ def spawn_harvesters(petals_max_distance: dict[int, int], spawn_partitions=parti
 	# harvest the partition yourself
 	if num_spawn_partitions == 1:
 		partition = spawn_partitions[1]
-		harvest_partition(partition, petals_max_distance)
+		harvest_partition(partition, petals_max_ticks)
 
 	child = spawn_harvesters(spawn_partitions[:half_partitions_pivot])
 	spawn_harvesters(spawn_partitions[half_partitions_pivot:])
 
 	wait_for(child)
 
-def harvest_partition(partition, petals_max_distance: dict[int, int]):
+def harvest_partition(partition_i, petals_max_ticks: dict[int, int]):
 	# TODO drones spawned with sync ticks passed in
 	# TODO on specific ticks, drones harvest measurment at same time
 
-	position = (get_pos_x(), get_pos_y())
+	partition = partitions[partition_i]
+	partition_zero = partition['zero']
+	drone.move_to(partition_zero[0], partition_zero[1])
 
+	# each tick is tracked within this loop to sync threads
 	for petals in range(MAX_PETALS, MIN_PETALS_ALLOWED - 1, - 1):
-		petal_path = partitions[partition]['petal_paths'][petals]
+		start = get_tick_count()
 
-		quick_print('petal_path length: ', len(petal_path))
+		# 3 ticks
+		petal_path = partitions[partition_i]['petal_paths'][petals]
+		# 1 tick
+		path = petal_path['path']
+		# 1 tick
+		num_steps = len(path)
 
-		# TODO continue tracking tick counts and call
-		# TODO drone.quote_whatever() after planting
+		# 0 tick
+		# every partition starts on partition_zero
+		previous_step = partition_zero 
+		# 2 ticks
+		for i in range(1, num_steps):
+			# 1 tick
+			step = path[i]
 
-		for step in petal_path:
-			drone.precise_move_to(position, step)
+			# 10 base, 7 / axis moved, 200 / step
+			drone.precise_move_to(previous_step, step)
+
+			# 0 ticks
+			previous_step = step
 			# 200 ticks
 			harvest()
+
+		# 1 tick
+		last_step = path[-1]
+		# 10 base, 7 / axis moved, 200 / step
+		drone.precise_move_to(last_step, partition_zero)
+
+		end = get_tick_count()
+		quick_print(
+			'partition', partition_i,
+			'petals', petals,
+			'number of steps', len(path),
+			'estimate', petals_max_ticks[petals],
+			'got', end-start
+		)
+
+
+def quote_harvest_cost(path):
+	# overhead cost of harvest_partition()
+	tick_cost = 8
+
+	prev_step = path[0]
+	for step in path[1:]:
+		precise_move_quote = drone.quote_precise_move_cost(prev_step, step)
+		tick_cost += precise_move_quote
+		# harvesting and logic in harvest_partition()
+		tick_cost += 201
+
+		prev_step = step
+
+	# overhead of move back to partition zero
+	tick_cost += drone.quote_precise_move_cost(path[-1], path[0])
+
+	return tick_cost
 
 # =================== CONTROL ===================
 
@@ -262,21 +316,20 @@ def farm_loop(should_stop=None):
 
 	# plant partitions
 	for partition_i in range(len(partitions)):
-		partition = partitions[partition_i]
 		# reserve your partition to do after child spawned
-		if partition == your_partition:
+		if partition_i == your_partition:
 			continue
 
 		# TODO tree-spawn planters
-		child = spawn_drone(plant_partition, partition)
+		child = spawn_drone(plant_partition, partition_i)
 		children[partition_i] = child
 
-	results = { your_partition: plant_partition(your_partition) }
-	partitions[your_partition]['petal_paths'] = results
+	your_petal_paths = plant_partition(your_partition)
+	partitions[your_partition]['petal_paths'] = your_petal_paths
 
-	petals_max_distances = {}
-	for petals in min(MIN_PETALS_ALLOWED, MAX_PETALS + 1):
-		petals_max_distances[petals] = partitions[your_partition]['distance']
+	petals_max_tick_estimate = {}
+	for petals in range(MIN_PETALS_ALLOWED, MAX_PETALS + 1):
+		petals_max_tick_estimate[petals] = partitions[your_partition]['tick_estimate']
 
 	# return children & aggregate max ticks / petals
 	for child_partition in children:
@@ -285,12 +338,12 @@ def farm_loop(should_stop=None):
 		partitions[child_partition]['petal_paths'] = child_results
 
 		for petals in child_results:
-			petals_distance = child_results[petals]['distance']
-			petals_max_distance = petals_max_distances[petals]
-			if petals_distance > petals_max_distance:
-				petals_max_distance[petals] = petals_distance
+			petals_tick_estimate = child_results[petals]['tick_estimate']
+			max_tick_estimate = petals_max_tick_estimate[petals]
+			if petals_tick_estimate > max_tick_estimate:
+				petals_max_tick_estimate[petals] = petals_tick_estimate
 
-	spawn_harvesters(petals_max_distance)
+	spawn_harvesters(petals_max_tick_estimate)
 
 	# tracking
 	(seconds, ticks, _) = loop_checkpoint()['since_last_check']
@@ -332,6 +385,8 @@ def farm(should_stop=None):
 def test_harvest_ticks() -> list[tuple]:
 	global partitions
 
+	quick_print('---')
+
 	# 32 partitions, on 32x32 world, average partition size of 32
 	partition =  {
 		'zero': (1, 1),
@@ -350,64 +405,47 @@ def test_harvest_ticks() -> list[tuple]:
 	partition_id = 0
 
 	petal_paths = plant_partition(partition_id)
+	partition['petal_paths'] = petal_paths
 
-	results = []
-
+	petals_max_ticks = {}
 	for petals in petal_paths:
-		path = petal_paths[petals]['path']
-		distance = petal_paths[petals]['distance']
+		petals_max_ticks[petals] = petal_paths[petals]['tick_estimate']
 
-		drone.move_to(partition['zero'][0], partition['zero'][1])
+	harvest_partition(partition_id, petals_max_ticks)
 
-		quick_print(str('starting ' + str(petals) + '-petals path'))
-		quick_print('distance: ', distance)
-		start_tick = get_tick_count()
-
-		for step in path:
-			drone.move_to(step[0], step[1])
-			harvest()
-
-		stop_tick = get_tick_count()
-		num_ticks = stop_tick - start_tick
-		quick_print(num_ticks, 'ticks')
-
-		results.append((len(path), distance, num_ticks))
-
-	return results
-
-def get_average_harvest_ticks_per_distance():
-	num_runs = 20
-
-	# num_ticks / distance for each petal-harvest run
-	all_results = []
-
-	for _ in range(num_runs):
-		results = test_harvest_ticks()
-		for result in results:
-			path_length = results[0]
-			distance = result[1]
-			num_ticks = result[2]
-			rate = num_ticks / distance
-
-			all_results.append(rate)
-
-
-	num_results = len(all_results)
-	mean = utils.avg_list(all_results)
-	diffs_squared = []
-	for result in all_results:
-		diff = abs(result - mean)
-		diff_squared = diff**2
-		diffs_squared.append(diff_squared)
-	sum_diffs_squared = utils.sum_list(diffs_squared)
-	standard_deviation = (sum_diffs_squared / num_results)**0.5
-
-	quick_print('mean', mean, 'ticks / step')
-	quick_print('standard deviation', standard_deviation, 'ticks / step')
+# def get_average_harvest_ticks_per_distance():
+# 	num_runs = 20
+# 
+# 	# num_ticks / distance for each petal-harvest run
+# 	all_results = []
+# 
+# 	for _ in range(num_runs):
+# 		results = test_harvest_ticks()
+# 		for result in results:
+# 			path_length = results[0]
+# 			distance = result[1]
+# 			num_ticks = result[2]
+# 			rate = num_ticks / distance
+# 
+# 			all_results.append(rate)
+# 
+# 
+# 	num_results = len(all_results)
+# 	mean = utils.avg_list(all_results)
+# 	diffs_squared = []
+# 	for result in all_results:
+# 		diff = abs(result - mean)
+# 		diff_squared = diff**2
+# 		diffs_squared.append(diff_squared)
+# 	sum_diffs_squared = utils.sum_list(diffs_squared)
+# 	standard_deviation = (sum_diffs_squared / num_results)**0.5
+# 
+# 	quick_print('mean', mean, 'ticks / step')
+# 	quick_print('standard deviation', standard_deviation, 'ticks / step')
 
 if __name__ == '__main__':
 	clear()
 	# farm()
 
-	# test_harvest_ticks()
-	get_average_harvest_ticks_per_distance()
+	test_harvest_ticks()
+	# get_average_harvest_ticks_per_distance()

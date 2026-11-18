@@ -24,7 +24,7 @@ clear()
 # 0 ticks
 # x = 5
 # start = get_tick_count()
-# y2 = x
+# y = x
 # end = get_tick_count()
 # print('variable creation & assignment:', end - start, 'ticks')
 # do_a_flip()
@@ -222,13 +222,34 @@ clear()
 # end = get_tick_count()
 # print('not:', end-start, 'ticks')
 
+# 1 tick
+d = {'a': 7 }
+start = get_tick_count()
+d['a']
+end = get_tick_count()
+print('reference dict:', end-start, 'ticks')
+
+# 3 ticks
+d = {'a': { 'b': { 'c': 7 } } }
+start = get_tick_count()
+d['a']['b']['c']
+end = get_tick_count()
+print('reference 3-nested dict:', end-start, 'ticks')
+
+# 1 tick
+l = ['a', 'b', 'c']
+start = get_tick_count()
+l[1]
+end = get_tick_count()
+print('reference list', end-start, 'ticks')
+
 
 # 212 ticks
-a = (0, 0)
-b = (0, 1)
-start = get_tick_count()
-drone.precise_move_to(a, b)
-end = get_tick_count()
-print('drone.precise_move_to():', end - start, 'ticks')
-drone.precise_move_to((0, 1), (0, 0))
-do_a_flip()
+# a = (0, 0)
+# b = (0, 1)
+# start = get_tick_count()
+# drone.precise_move_to(a, b)
+# end = get_tick_count()
+# print('drone.precise_move_to():', end - start, 'ticks')
+# drone.precise_move_to((0, 1), (0, 0))
+# do_a_flip()
